@@ -1,40 +1,40 @@
-# OIL Kastenlist (backend)
+# OIL Kastenliste (backend)
 
 ## Data Model
 
 ### `users`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int PK | |
-| `rz_id` | string unique | e.g. `lu451rei` |
-| `first_name` | string | |
-| `last_name` | string | |
+| Column       | Type          | Notes           |
+|--------------|---------------|-----------------|
+| `id`         | int PK        |                 |
+| `rz_id`      | string unique | e.g. `lu451rei` |
+| `first_name` | string        |                 |
+| `last_name`  | string        |                 |
 
 ### `meetings`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int PK | |
-| `date` | timestamp | |
-| `link_token` | string unique | random string |
-| `question` | string nullable | |
-| `answer` | string nullable | compared server-side, never returned in responses |
-| `question_required` | boolean | |
-| `check_answer` | boolean | if false, any submitted answer is accepted as correct |
-| `max_retries` | int | only relevant if question_required and check_answer |
-| `excuse_deadline_minutes` | int | minutes before meeting start that excuses lock |
+| Column                    | Type            | Notes                                                 |
+|---------------------------|-----------------|-------------------------------------------------------|
+| `id`                      | int PK          |                                                       |
+| `date`                    | timestamp       |                                                       |
+| `link_token`              | string unique   | random string                                         |
+| `question`                | string nullable |                                                       |
+| `answer`                  | string nullable | compared server-side, never returned in responses     |
+| `question_required`       | boolean         |                                                       |
+| `check_answer`            | boolean         | if false, any submitted answer is accepted as correct |
+| `max_retries`             | int             | only relevant if question_required and check_answer   |
+| `excuse_deadline_minutes` | int             | minutes before meeting start that excuses lock        |
 
 ### `user_meetings`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int PK | |
-| `user_id` | int FK | |
-| `meeting_id` | int FK | |
-| `status` | enum | `present`, `absent`, `excused` |
-| `attendance_type` | enum nullable | `in_person`, `online` |
-| `checked_in_at` | timestamp nullable | |
-| `excuse_submitted_at` | timestamp nullable | |
-| `answer_attempts` | int | default 0 |
-| `answer_correct` | boolean nullable | |
+| Column                | Type               | Notes                          |
+|-----------------------|--------------------|--------------------------------|
+| `id`                  | int PK             |                                |
+| `user_id`             | int FK             |                                |
+| `meeting_id`          | int FK             |                                |
+| `status`              | enum               | `present`, `absent`, `excused` |
+| `attendance_type`     | enum nullable      | `in_person`, `online`          |
+| `checked_in_at`       | timestamp nullable |                                |
+| `excuse_submitted_at` | timestamp nullable |                                |
+| `answer_attempts`     | int                | default 0                      |
+| `answer_correct`      | boolean nullable   |                                |
 
 ---
 
@@ -59,55 +59,55 @@
 ## API Overview
 
 ### Public — Users
-| Method | Route | Description |
-|---|---|---|
-| GET | `/api/users/:rzId` | Look up a user by RZ ID |
-| POST | `/api/users` | Create a new user |
+| Method | Route              | Description             |
+|--------|--------------------|-------------------------|
+| GET    | `/api/users/:rzId` | Look up a user by RZ ID |
+| POST   | `/api/users`       | Create a new user       |
 
 ### Public — Meetings
-| Method | Route | Description |
-|---|---|---|
-| GET | `/api/meetings/next` | Get next upcoming meeting info and excuse deadline |
-| GET | `/api/meetings/:token` | Get meeting info by token link |
-| POST | `/api/meetings/:token/checkin` | Check in to a meeting, optionally submit answer |
-| POST | `/api/meetings/:token/excuse` | Submit an excuse before the deadline |
+| Method | Route                          | Description                                        |
+|--------|--------------------------------|----------------------------------------------------|
+| GET    | `/api/meetings/next`           | Get next upcoming meeting info and excuse deadline |
+| GET    | `/api/meetings/:token`         | Get meeting info by token link                     |
+| POST   | `/api/meetings/:token/checkin` | Check in to a meeting, optionally submit answer    |
+| POST   | `/api/meetings/:token/excuse`  | Submit an excuse before the deadline               |
 
 ### Admin — Auth
-| Method | Route | Description |
-|---|---|---|
-| POST | `/api/admin/login` | Verify password, set session cookie |
-| POST | `/api/admin/logout` | Clear session cookie |
+| Method | Route               | Description                         |
+|--------|---------------------|-------------------------------------|
+| POST   | `/api/admin/login`  | Verify password, set session cookie |
+| POST   | `/api/admin/logout` | Clear session cookie                |
 
 ### Admin — Meetings
-| Method | Route | Description |
-|---|---|---|
-| GET | `/api/admin/meetings` | List all meetings |
-| POST | `/api/admin/meetings` | Create a new meeting |
-| GET | `/api/admin/meetings/:id` | Get a single meeting |
-| PATCH | `/api/admin/meetings/:id` | Update a meeting |
-| DELETE | `/api/admin/meetings/:id` | Delete a meeting |
+| Method | Route                     | Description          |
+|--------|---------------------------|----------------------|
+| GET    | `/api/admin/meetings`     | List all meetings    |
+| POST   | `/api/admin/meetings`     | Create a new meeting |
+| GET    | `/api/admin/meetings/:id` | Get a single meeting |
+| PATCH  | `/api/admin/meetings/:id` | Update a meeting     |
+| DELETE | `/api/admin/meetings/:id` | Delete a meeting     |
 
 ### Admin — Users
-| Method | Route | Description |
-|---|---|---|
-| GET | `/api/admin/users` | List all users |
-| POST | `/api/admin/users` | Create a new user |
-| GET | `/api/admin/users/:id` | Get a single user with full meeting history |
-| PATCH | `/api/admin/users/:id` | Update a user |
-| DELETE | `/api/admin/users/:id` | Delete a user |
+| Method | Route                  | Description                                 |
+|--------|------------------------|---------------------------------------------|
+| GET    | `/api/admin/users`     | List all users                              |
+| POST   | `/api/admin/users`     | Create a new user                           |
+| GET    | `/api/admin/users/:id` | Get a single user with full meeting history |
+| PATCH  | `/api/admin/users/:id` | Update a user                               |
+| DELETE | `/api/admin/users/:id` | Delete a user                               |
 
 ### Admin — Attendance
-| Method | Route | Description |
-|---|---|---|
-| GET | `/api/admin/meetings/:id/attendance` | Get all attendance records for a meeting |
-| POST | `/api/admin/meetings/:id/checkin` | Manually check in a user after the fact |
-| PATCH | `/api/admin/meetings/:id/attendance/:userId` | Override a user's attendance status |
+| Method | Route                                        | Description                              |
+|--------|----------------------------------------------|------------------------------------------|
+| GET    | `/api/admin/meetings/:id/attendance`         | Get all attendance records for a meeting |
+| POST   | `/api/admin/meetings/:id/checkin`            | Manually check in a user after the fact  |
+| PATCH  | `/api/admin/meetings/:id/attendance/:userId` | Override a user's attendance status      |
 
 ### Admin — Stats
-| Method | Route | Description |
-|---|---|---|
-| GET | `/api/admin/stats` | Full overview of all users, meetings and beer scores |
-| GET | `/api/admin/stats/export` | Download stats as CSV |
+| Method | Route                     | Description                                          |
+|--------|---------------------------|------------------------------------------------------|
+| GET    | `/api/admin/stats`        | Full overview of all users, meetings and beer scores |
+| GET    | `/api/admin/stats/export` | Download stats as CSV                                |
 
 ---
 
@@ -116,23 +116,31 @@
 ### Public — Users
 
 #### `GET /api/users/:rzId`
-```json
-// 200
-{ "id": 1, "rzId": "lu451rei", "firstName": "Lukas", "lastName": "Rei" }
 
-// 404
+200
+```json
+{ "id": 1, "rzId": "lu451rei", "firstName": "Lukas", "lastName": "Rei" }
+```
+
+404
+```json
 { "message": "user not found" }
 ```
 
 #### `POST /api/users`
+
+Request
 ```json
-// request
 { "rzId": "lu451rei", "firstName": "Lukas", "lastName": "Rei" }
+```
 
-// 201
+201
+```json
 { "id": 1, "rzId": "lu451rei", "firstName": "Lukas", "lastName": "Rei" }
+```
 
-// 409
+409
+```json
 { "message": "user already exists" }
 ```
 
@@ -141,22 +149,26 @@
 ### Public — Meetings
 
 #### `GET /api/meetings/next`
+
+200
 ```json
-// 200
 {
   "id": 1,
   "date": "2026-04-10T18:00:00Z",
   "excuseDeadline": "2026-04-10T17:00:00Z",
   "linkToken": "abc123"
 }
+```
 
-// 404
+404
+```json
 { "message": "no upcoming meeting" }
 ```
 
 #### `GET /api/meetings/:token`
+
+200
 ```json
-// 200
 {
   "id": 1,
   "date": "2026-04-10T18:00:00Z",
@@ -166,47 +178,69 @@
   "question": "What was the main topic?",
   "maxRetries": 3
 }
+```
 
-// 404
+404
+```json
 { "message": "meeting not found" }
 ```
 
 #### `POST /api/meetings/:token/checkin`
+
+Request
 ```json
-// request
 { "rzId": "lu451rei", "attendanceType": "in_person", "answer": "deployment pipeline" }
+```
 
-// 200 — checked in, answer correct or no question
+200 — checked in, answer correct or no question
+```json
 { "message": "checked in", "answerCorrect": true }
+```
 
-// 200 — wrong answer, retries remaining
+200 — wrong answer, retries remaining
+```json
 { "message": "wrong answer", "answerCorrect": false, "attemptsRemaining": 2 }
+```
 
-// 403 — retries exhausted
+403 — retries exhausted
+```json
 { "message": "max retries reached", "answerCorrect": false, "attemptsRemaining": 0 }
+```
 
-// 409 — already checked in
+409 — already checked in
+```json
 { "message": "already checked in" }
+```
 
-// 404
+404
+```json
 { "message": "user not found" }
 ```
 
 #### `POST /api/meetings/:token/excuse`
+
+Request
 ```json
-// request
 { "rzId": "lu451rei" }
+```
 
-// 200
+200
+```json
 { "message": "excuse submitted" }
+```
 
-// 409 — already excused or already checked in
+409 — already excused or already checked in
+```json
 { "message": "already submitted" }
+```
 
-// 403 — past deadline
+403 — past deadline
+```json
 { "message": "excuse deadline passed" }
+```
 
-// 404
+404
+```json
 { "message": "user not found" }
 ```
 
@@ -215,20 +249,26 @@
 ### Admin — Auth
 
 #### `POST /api/admin/login`
+
+Request
 ```json
-// request
 { "password": "secret" }
+```
 
-// 200 + sets cookie
+200 + sets cookie
+```json
 { "message": "ok" }
+```
 
-// 401
+401
+```json
 { "message": "invalid password" }
 ```
 
 #### `POST /api/admin/logout`
+
+200 + clears cookie
 ```json
-// 200 + clears cookie
 { "message": "ok" }
 ```
 
@@ -253,8 +293,9 @@
 ```
 
 #### `POST /api/admin/meetings` + `PATCH /api/admin/meetings/:id`
+
+Request
 ```json
-// request
 {
   "date": "2026-04-10T18:00:00Z",
   "question": "What was the main topic?",
@@ -264,9 +305,9 @@
   "maxRetries": 3,
   "excuseDeadlineMinutes": 60
 }
-
-// response — full meeting object, answer omitted
 ```
+
+Response — full meeting object, answer omitted
 
 #### `GET /api/admin/meetings/:id`
 Same shape as single item from list, answer never returned.
@@ -288,12 +329,13 @@ Same shape as single item from list, answer never returned.
 ```
 
 #### `POST /api/admin/users` + `PATCH /api/admin/users/:id`
-```json
-// request
-{ "rzId": "lu451rei", "firstName": "Lukas", "lastName": "Rei" }
 
-// response — full user object
+Request
+```json
+{ "rzId": "lu451rei", "firstName": "Lukas", "lastName": "Rei" }
 ```
+
+Response — full user object
 
 #### `GET /api/admin/users/:id`
 ```json
@@ -358,21 +400,25 @@ Same shape as single item from list, answer never returned.
 ```
 
 #### `POST /api/admin/meetings/:id/checkin`
-```json
-// request
-{ "rzId": "lu451rei", "attendanceType": "in_person", "answerCorrect": true }
 
-// 200
+Request
+```json
+{ "rzId": "lu451rei", "attendanceType": "in_person", "answerCorrect": true }
+```
+
+200
+```json
 { "message": "checked in" }
 ```
 
 #### `PATCH /api/admin/meetings/:id/attendance/:userId`
-```json
-// request
-{ "status": "excused" }
 
-// response — updated attendance object, same shape as item in attendance list
+Request
+```json
+{ "status": "excused" }
 ```
+
+Response — updated attendance object, same shape as item in attendance list
 
 ---
 
@@ -418,8 +464,9 @@ Content-Disposition: attachment; filename="beer-tracker-export.csv"
 ## Notes
 
 - `answer` is accepted on write but never returned in any API response
-- `checkAnswer: false` means any submitted answer is accepted as correct — the stored answer is ignored, `answerCorrect` is always returned as `true`, and `maxRetries` is irrelevant. However a non-empty answer string is still required in the checkin request when the meeting has a question
+- `checkAnswer: false` means any submitted answer is accepted as correct — the stored answer is ignored, `answerCorrect` is always returned as `true`, and `maxRetries` is irrelevant. However, a non-empty answer string is still required in the check-in request when the meeting has a question
 - `GET /api/meetings/next` must be declared before `GET /api/meetings/:token` in the NestJS controller to avoid routing conflict
-- `beerScore` = count of `absent` rows without excuse per user
+- `beerScore` = count of `absent` rows without an excuse per user
 - In development: Vite dev server proxies `/api/*` to NestJS on port 3000
 - In production: NestJS serves `frontend/dist` via `ServeStaticModule`, all unmatched routes return `index.html` for React Router
+- The API should auto-document itself (using OpenAPI)
