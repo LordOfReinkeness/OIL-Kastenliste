@@ -1,84 +1,54 @@
-# OIL Kastenliste (backend)
+# Kastenliste OIL — Backend Documentation
 
-## Data Model
+## Tech Stack
 
-### `users`
-| Column       | Type          | Notes           |
-|--------------|---------------|-----------------|
-| `id`         | int PK        |                 |
-| `rz_id`      | string unique | e.g. `lu451rei` |
-| `first_name` | string        |                 |
-| `last_name`  | string        |                 |
-
-### `meetings`
-| Column                    | Type            | Notes                                                 |
-|---------------------------|-----------------|-------------------------------------------------------|
-| `id`                      | int PK          |                                                       |
-| `date`                    | timestamp       |                                                       |
-| `link_token`              | string unique   | random string                                         |
-| `question`                | string nullable |                                                       |
-| `answer`                  | string nullable | compared server-side, never returned in responses     |
-| `question_required`       | boolean         |                                                       |
-| `check_answer`            | boolean         | if false, any submitted answer is accepted as correct |
-| `max_retries`             | int             | only relevant if question_required and check_answer   |
-| `excuse_deadline_minutes` | int             | minutes before meeting start that excuses lock        |
-
-### `user_meetings`
-| Column                | Type               | Notes                          |
-|-----------------------|--------------------|--------------------------------|
-| `id`                  | int PK             |                                |
-| `user_id`             | int FK             |                                |
-| `meeting_id`          | int FK             |                                |
-| `status`              | enum               | `present`, `absent`, `excused` |
-| `attendance_type`     | enum nullable      | `in_person`, `online`          |
-| `checked_in_at`       | timestamp nullable |                                |
-| `excuse_submitted_at` | timestamp nullable |                                |
-| `answer_attempts`     | int                | default 0                      |
-| `answer_correct`      | boolean nullable   |                                |
-
----
-
-## User Flow
-
-1. User enters RZ ID → lookup or create account
-2. **Check-in flow:** Admin shares meeting link after meeting → user opens link, enters RZ ID, selects attendance type, optionally answers question
-3. **Excuse flow:** User visits excuse page → app calls `GET /api/meetings/next` → user submits excuse before deadline
+| Layer      | Technology                                    |
+|------------|-----------------------------------------------|
+| Framework  | NestJS + TypeScript                           |
+| Database   | PostgreSQL via TypeORM                        |
+| Auth       | Bcrypt-hashed env var password, signed cookie |
+| Validation | class-validator + class-transformer           |
+| Static     | @nestjs/serve-static — serves `frontend/dist` |
 
 ---
 
 ## Admin Auth
 
 - Password set via env var / Docker Compose file
-- On startup: hashed and stored in memory
+- On startup: hashed with bcrypt and stored in memory
 - `POST /api/admin/login` verifies password, sets signed cookie
 - Guard on all `/api/admin/*` routes validates cookie
-- "Change password" = update env var and restart container
+- Changing the password means updating the env var and restarting the container
 
 ---
 
 ## API Overview
 
 ### Public — Users
-| Method | Route              | Description             |
-|--------|--------------------|-------------------------|
-| GET    | `/api/users/:rzId` | Look up a user by RZ ID |
-| POST   | `/api/users`       | Create a new user       |
+
+| Method | Route              | Description                |
+|--------|--------------------|----------------------------|
+| GET    | `/api/users/:rzId` | Look up a user by RZ ID    |
+| POST   | `/api/users`       | Create a new user          |
 
 ### Public — Meetings
-| Method | Route                          | Description                                        |
-|--------|--------------------------------|----------------------------------------------------|
-| GET    | `/api/meetings/next`           | Get next upcoming meeting info and excuse deadline |
-| GET    | `/api/meetings/:token`         | Get meeting info by token link                     |
-| POST   | `/api/meetings/:token/checkin` | Check in to a meeting, optionally submit answer    |
-| POST   | `/api/meetings/:token/excuse`  | Submit an excuse before the deadline               |
+
+| Method | Route                          | Description                                      |
+|--------|--------------------------------|--------------------------------------------------|
+| GET    | `/api/meetings/next`           | Get next upcoming meeting info + excuse deadline |
+| GET    | `/api/meetings/:token`         | Get meeting info by token link                   |
+| POST   | `/api/meetings/:token/checkin` | Check in to a meeting, optionally submit answer  |
+| POST   | `/api/meetings/:token/excuse`  | Submit an excuse before the deadline             |
 
 ### Admin — Auth
+
 | Method | Route               | Description                         |
 |--------|---------------------|-------------------------------------|
 | POST   | `/api/admin/login`  | Verify password, set session cookie |
 | POST   | `/api/admin/logout` | Clear session cookie                |
 
 ### Admin — Meetings
+
 | Method | Route                     | Description          |
 |--------|---------------------------|----------------------|
 | GET    | `/api/admin/meetings`     | List all meetings    |
@@ -88,26 +58,29 @@
 | DELETE | `/api/admin/meetings/:id` | Delete a meeting     |
 
 ### Admin — Users
-| Method | Route                  | Description                                 |
-|--------|------------------------|---------------------------------------------|
-| GET    | `/api/admin/users`     | List all users                              |
-| POST   | `/api/admin/users`     | Create a new user                           |
-| GET    | `/api/admin/users/:id` | Get a single user with full meeting history |
-| PATCH  | `/api/admin/users/:id` | Update a user                               |
-| DELETE | `/api/admin/users/:id` | Delete a user                               |
+
+| Method | Route                  | Description                            |
+|--------|------------------------|----------------------------------------|
+| GET    | `/api/admin/users`     | List all users                         |
+| POST   | `/api/admin/users`     | Create a new user                      |
+| GET    | `/api/admin/users/:id` | Get a single user with meeting history |
+| PATCH  | `/api/admin/users/:id` | Update a user                          |
+| DELETE | `/api/admin/users/:id` | Delete a user                          |
 
 ### Admin — Attendance
-| Method | Route                                        | Description                              |
-|--------|----------------------------------------------|------------------------------------------|
-| GET    | `/api/admin/meetings/:id/attendance`         | Get all attendance records for a meeting |
-| POST   | `/api/admin/meetings/:id/checkin`            | Manually check in a user after the fact  |
-| PATCH  | `/api/admin/meetings/:id/attendance/:userId` | Override a user's attendance status      |
+
+| Method | Route                                          | Description                          |
+|--------|------------------------------------------------|--------------------------------------|
+| GET    | `/api/admin/meetings/:id/attendance`           | Get all attendance records           |
+| POST   | `/api/admin/meetings/:id/checkin`              | Manually check in a user             |
+| PATCH  | `/api/admin/meetings/:id/attendance/:userId`   | Override a user's attendance status  |
 
 ### Admin — Stats
-| Method | Route                     | Description                                          |
-|--------|---------------------------|------------------------------------------------------|
-| GET    | `/api/admin/stats`        | Full overview of all users, meetings and beer scores |
-| GET    | `/api/admin/stats/export` | Download stats as CSV                                |
+
+| Method | Route                       | Description                                  |
+|--------|-----------------------------|----------------------------------------------|
+| GET    | `/api/admin/stats`          | Full overview of all users, meetings, scores |
+| GET    | `/api/admin/stats/export`   | Download stats as CSV                        |
 
 ---
 
@@ -117,31 +90,51 @@
 
 #### `GET /api/users/:rzId`
 
-200
+200 — user found
 ```json
-{ "id": 1, "rzId": "lu451rei", "firstName": "Lukas", "lastName": "Rei" }
+{
+  "id": 1,
+  "rzId": "lu451rei",
+  "firstName": "Lukas",
+  "lastName": "Rei"
+}
 ```
 
-404
+404 — user not found
 ```json
-{ "message": "user not found" }
+{
+  "message": "user not found"
+}
 ```
+
+---
 
 #### `POST /api/users`
 
 Request
 ```json
-{ "rzId": "lu451rei", "firstName": "Lukas", "lastName": "Rei" }
+{
+  "rzId": "lu451rei",
+  "firstName": "Lukas",
+  "lastName": "Rei"
+}
 ```
 
-201
+201 — created
 ```json
-{ "id": 1, "rzId": "lu451rei", "firstName": "Lukas", "lastName": "Rei" }
+{
+  "id": 1,
+  "rzId": "lu451rei",
+  "firstName": "Lukas",
+  "lastName": "Rei"
+}
 ```
 
-409
+409 — RZ ID already exists
 ```json
-{ "message": "user already exists" }
+{
+  "message": "user already exists"
+}
 ```
 
 ---
@@ -150,7 +143,7 @@ Request
 
 #### `GET /api/meetings/next`
 
-200
+200 — next meeting found
 ```json
 {
   "id": 1,
@@ -160,14 +153,18 @@ Request
 }
 ```
 
-404
+404 — no upcoming meeting scheduled
 ```json
-{ "message": "no upcoming meeting" }
+{
+  "message": "no upcoming meeting"
+}
 ```
+
+---
 
 #### `GET /api/meetings/:token`
 
-200
+200 — meeting found
 ```json
 {
   "id": 1,
@@ -180,68 +177,103 @@ Request
 }
 ```
 
-404
+404 — token not found
 ```json
-{ "message": "meeting not found" }
+{
+  "message": "meeting not found"
+}
 ```
+
+---
 
 #### `POST /api/meetings/:token/checkin`
 
 Request
 ```json
-{ "rzId": "lu451rei", "attendanceType": "in_person", "answer": "deployment pipeline" }
+{
+  "rzId": "lu451rei",
+  "attendanceType": "in_person",
+  "answer": "deployment pipeline"
+}
 ```
 
 200 — checked in, answer correct or no question
 ```json
-{ "message": "checked in", "answerCorrect": true }
+{
+  "message": "checked in",
+  "answerCorrect": true
+}
 ```
 
 200 — wrong answer, retries remaining
 ```json
-{ "message": "wrong answer", "answerCorrect": false, "attemptsRemaining": 2 }
+{
+  "message": "wrong answer",
+  "answerCorrect": false,
+  "attemptsRemaining": 2
+}
 ```
 
 403 — retries exhausted
 ```json
-{ "message": "max retries reached", "answerCorrect": false, "attemptsRemaining": 0 }
+{
+  "message": "max retries reached",
+  "answerCorrect": false,
+  "attemptsRemaining": 0
+}
 ```
 
 409 — already checked in
 ```json
-{ "message": "already checked in" }
+{
+  "message": "already checked in"
+}
 ```
 
-404
+404 — user not found
 ```json
-{ "message": "user not found" }
+{
+  "message": "user not found"
+}
 ```
+
+---
 
 #### `POST /api/meetings/:token/excuse`
 
 Request
 ```json
-{ "rzId": "lu451rei" }
+{
+  "rzId": "lu451rei"
+}
 ```
 
-200
+200 — excuse submitted
 ```json
-{ "message": "excuse submitted" }
+{
+  "message": "excuse submitted"
+}
 ```
 
 409 — already excused or already checked in
 ```json
-{ "message": "already submitted" }
+{
+  "message": "already submitted"
+}
 ```
 
-403 — past deadline
+403 — past the excuse deadline
 ```json
-{ "message": "excuse deadline passed" }
+{
+  "message": "excuse deadline passed"
+}
 ```
 
-404
+404 — user or meeting not found
 ```json
-{ "message": "user not found" }
+{
+  "message": "user not found"
+}
 ```
 
 ---
@@ -252,24 +284,34 @@ Request
 
 Request
 ```json
-{ "password": "secret" }
+{
+  "password": "secret"
+}
 ```
 
-200 + sets cookie
+200 — sets cookie
 ```json
-{ "message": "ok" }
+{
+  "message": "ok"
+}
 ```
 
-401
+401 — wrong password
 ```json
-{ "message": "invalid password" }
+{
+  "message": "invalid password"
+}
 ```
+
+---
 
 #### `POST /api/admin/logout`
 
-200 + clears cookie
+200 — clears cookie
 ```json
-{ "message": "ok" }
+{
+  "message": "ok"
+}
 ```
 
 ---
@@ -277,6 +319,8 @@ Request
 ### Admin — Meetings
 
 #### `GET /api/admin/meetings`
+
+200 — list of all meetings
 ```json
 [
   {
@@ -292,7 +336,9 @@ Request
 ]
 ```
 
-#### `POST /api/admin/meetings` + `PATCH /api/admin/meetings/:id`
+---
+
+#### `POST /api/admin/meetings`
 
 Request
 ```json
@@ -307,14 +353,55 @@ Request
 }
 ```
 
-Response — full meeting object, answer omitted
+201 — created, answer field omitted in response
+```json
+{
+  "id": 1,
+  "date": "2026-04-10T18:00:00Z",
+  "linkToken": "abc123",
+  "questionRequired": true,
+  "checkAnswer": false,
+  "maxRetries": 3,
+  "excuseDeadlineMinutes": 60,
+  "question": "What was the main topic?"
+}
+```
 
-#### `GET /api/admin/meetings/:id`
-Same shape as single item from list, answer never returned.
+---
+
+#### `PATCH /api/admin/meetings/:id`
+
+Request — all fields optional
+```json
+{
+  "question": "Updated question?",
+  "checkAnswer": true
+}
+```
+
+200 — updated meeting, answer field omitted
+```json
+{
+  "id": 1,
+  "date": "2026-04-10T18:00:00Z",
+  "linkToken": "abc123",
+  "questionRequired": true,
+  "checkAnswer": true,
+  "maxRetries": 3,
+  "excuseDeadlineMinutes": 60,
+  "question": "Updated question?"
+}
+```
+
+---
 
 #### `DELETE /api/admin/meetings/:id`
+
+200
 ```json
-{ "message": "deleted" }
+{
+  "message": "deleted"
+}
 ```
 
 ---
@@ -322,22 +409,68 @@ Same shape as single item from list, answer never returned.
 ### Admin — Users
 
 #### `GET /api/admin/users`
+
+200
 ```json
 [
-  { "id": 1, "rzId": "lu451rei", "firstName": "Lukas", "lastName": "Rei" }
+  {
+    "id": 1,
+    "rzId": "lu451rei",
+    "firstName": "Lukas",
+    "lastName": "Rei"
+  }
 ]
 ```
 
-#### `POST /api/admin/users` + `PATCH /api/admin/users/:id`
+---
+
+#### `POST /api/admin/users`
 
 Request
 ```json
-{ "rzId": "lu451rei", "firstName": "Lukas", "lastName": "Rei" }
+{
+  "rzId": "lu451rei",
+  "firstName": "Lukas",
+  "lastName": "Rei"
+}
 ```
 
-Response — full user object
+201
+```json
+{
+  "id": 1,
+  "rzId": "lu451rei",
+  "firstName": "Lukas",
+  "lastName": "Rei"
+}
+```
+
+---
+
+#### `PATCH /api/admin/users/:id`
+
+Request — all fields optional
+```json
+{
+  "firstName": "Lukas"
+}
+```
+
+200
+```json
+{
+  "id": 1,
+  "rzId": "lu451rei",
+  "firstName": "Lukas",
+  "lastName": "Rei"
+}
+```
+
+---
 
 #### `GET /api/admin/users/:id`
+
+200 — user with full meeting history
 ```json
 {
   "id": 1,
@@ -358,9 +491,15 @@ Response — full user object
 }
 ```
 
+---
+
 #### `DELETE /api/admin/users/:id`
+
+200
 ```json
-{ "message": "deleted" }
+{
+  "message": "deleted"
+}
 ```
 
 ---
@@ -368,6 +507,8 @@ Response — full user object
 ### Admin — Attendance
 
 #### `GET /api/admin/meetings/:id/attendance`
+
+200
 ```json
 {
   "meetingId": 1,
@@ -399,32 +540,59 @@ Response — full user object
 }
 ```
 
+---
+
 #### `POST /api/admin/meetings/:id/checkin`
 
 Request
 ```json
-{ "rzId": "lu451rei", "attendanceType": "in_person", "answerCorrect": true }
+{
+  "rzId": "lu451rei",
+  "attendanceType": "in_person",
+  "answerCorrect": true
+}
 ```
 
 200
 ```json
-{ "message": "checked in" }
+{
+  "message": "checked in"
+}
 ```
+
+---
 
 #### `PATCH /api/admin/meetings/:id/attendance/:userId`
 
 Request
 ```json
-{ "status": "excused" }
+{
+  "status": "excused"
+}
 ```
 
-Response — updated attendance object, same shape as item in attendance list
+200 — updated attendance record
+```json
+{
+  "userId": 1,
+  "rzId": "lu451rei",
+  "firstName": "Lukas",
+  "lastName": "Rei",
+  "status": "excused",
+  "attendanceType": null,
+  "checkedInAt": null,
+  "answerCorrect": null,
+  "excuseSubmittedAt": null
+}
+```
 
 ---
 
 ### Admin — Stats
 
 #### `GET /api/admin/stats`
+
+200
 ```json
 {
   "users": [
@@ -452,21 +620,13 @@ Response — updated attendance object, same shape as item in attendance list
 }
 ```
 
-#### `GET /api/admin/stats/export`
-Returns CSV file download.
-```
-Content-Type: text/csv
-Content-Disposition: attachment; filename="beer-tracker-export.csv"
-```
-
 ---
 
-## Notes
+#### `GET /api/admin/stats/export`
 
-- `answer` is accepted on write but never returned in any API response
-- `checkAnswer: false` means any submitted answer is accepted as correct — the stored answer is ignored, `answerCorrect` is always returned as `true`, and `maxRetries` is irrelevant. However, a non-empty answer string is still required in the check-in request when the meeting has a question
-- `GET /api/meetings/next` must be declared before `GET /api/meetings/:token` in the NestJS controller to avoid routing conflict
-- `beerScore` = count of `absent` rows without an excuse per user
-- In development: Vite dev server proxies `/api/*` to NestJS on port 3000
-- In production: NestJS serves `frontend/dist` via `ServeStaticModule`, all unmatched routes return `index.html` for React Router
-- The API should auto-document itself (using OpenAPI)
+Returns a CSV file download. No JSON body.
+
+```
+Content-Type: text/csv
+Content-Disposition: attachment; filename="kastenliste-oil-export.csv"
+```
