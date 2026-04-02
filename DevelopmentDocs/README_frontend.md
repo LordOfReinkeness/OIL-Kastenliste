@@ -12,13 +12,13 @@
 
 ## Routes
 
-| Path | Page | Auth |
-|---|---|---|
-| `/` | Home | — |
-| `/meeting/:token` | Meeting check-in | — |
-| `/admin` | Admin — Overview tab | Admin cookie |
+| Path              | Page                 | Auth         |
+|-------------------|----------------------|--------------|
+| `/`               | Home                 | —            |
+| `/meeting/:token` | Meeting check-in     | —            |
+| `/admin`          | Admin — Overview tab | Admin cookie |
 | `/admin/meetings` | Admin — Meetings tab | Admin cookie |
-| `/admin/users` | Admin — Users tab | Admin cookie |
+| `/admin/users`    | Admin — Users tab    | Admin cookie |
 
 The admin area feels like a single page — `/admin`, `/admin/meetings`, and `/admin/users` all render inside the same `AdminLayout` with a shared `TabBar` and top bar. Navigating between tabs only swaps the tab content, nothing else re-mounts. Direct URL access to `/admin/meetings` or `/admin/users` is supported and lands on the correct tab.
 
@@ -107,7 +107,7 @@ Props: `title`, `closable`, `children`
 ```
 ┌─────────────────────┐  ┌─────────────────────┐
 │                     │  │                     │
-│   Entschuldigung    │  │    Einchecken        │
+│   Entschuldigung    │  │    Einchecken       │
 │    einreichen       │  │                     │
 │                     │  │                     │
 └─────────────────────┘  └─────────────────────┘
@@ -202,12 +202,12 @@ Horizontal tab row with active underline. Navigates via React Router `<Link>`.
 ### `StatusBadge`
 Compact inline indicator.
 
-| Status | Style |
-|---|---|
-| `present` | Teal background `#009B91`, white text |
-| `absent` | Black background, white text |
+| Status    | Style                                     |
+|-----------|-------------------------------------------|
+| `present` | Teal background `#009B91`, white text     |
+| `absent`  | Black background, white text              |
 | `excused` | Ice blue background `#D9E5EC`, black text |
-| `—` | Empty / no row yet |
+| `—`       | Empty / no row yet                        |
 
 ### `Button`
 Three variants: `primary`, `secondary`, `destructive`. See styling-guide.md.
@@ -225,13 +225,13 @@ Used on admin pages. Black bottom border, height `64px`, title left, actions rig
 
 ## Responsive Behaviour
 
-| Component | Mobile | Desktop |
-|---|---|---|
-| Home buttons | Stacked vertically, full width | Side by side, equal width |
-| Popups | Full screen width minus `32px` margin | Max `480–560px` centered |
-| Admin tabs | — | Horizontal tab bar |
-| Admin table | Horizontally scrollable | Full width |
-| Admin lists | — | Full width |
+| Component    | Mobile                                | Desktop                   |
+|--------------|---------------------------------------|---------------------------|
+| Home buttons | Stacked vertically, full width        | Side by side, equal width |
+| Popups       | Full screen width minus `32px` margin | Max `480–560px` centered  |
+| Admin tabs   | —                                     | Horizontal tab bar        |
+| Admin table  | Horizontally scrollable               | Full width                |
+| Admin lists  | —                                     | Full width                |
 
 The admin area does not need a mobile layout. If accessed on mobile it should still be usable but no special mobile treatment is required.
 
