@@ -2,13 +2,13 @@
 
 ## Tech Stack
 
-| Layer      | Technology                                          |
-|------------|-----------------------------------------------------|
-| Framework  | NestJS + TypeScript                                 |
-| Database   | PostgreSQL via TypeORM                              |
+| Layer      | Technology                                                |
+|------------|-----------------------------------------------------------|
+| Framework  | NestJS + TypeScript                                       |
+| Database   | PostgreSQL via TypeORM                                    |
 | Auth       | JWT signed with env var secret, stored in httpOnly cookie |
-| Validation | class-validator + class-transformer                 |
-| Static     | @nestjs/serve-static — serves `frontend/dist`       |
+| Validation | class-validator + class-transformer                       |
+| Static     | @nestjs/serve-static — serves `frontend/dist`             |
 
 ---
 
@@ -24,50 +24,85 @@
 
 ---
 
+## Attendance State Machine
+
+Each user has one `user_meeting` record per meeting. The record is created lazily — on check-in, excuse submission, or on the first read after the checkin deadline passes.
+
+### Fields
+
+| Field            | Type      | Description                                              |
+|------------------|-----------|----------------------------------------------------------|
+| `excusedAt`      | timestamp | When excuse was submitted; null if none                  |
+| `excuseType`     | enum      | `late` = excusing for being late, `absent` = excusing absence |
+| `checkedInAt`    | timestamp | When user checked in; null if not checked in             |
+| `isLate`         | boolean   | Set manually by admin                                    |
+| `attendanceType` | string    | `in_person` or `remote`; null if not checked in         |
+| `answerCorrect`  | boolean   | null if no question or not checked in                    |
+| `infraction`     | enum      | Cached: `none` / `late` / `absent`                      |
+
+### Infraction Logic
+
+| Excuse | Checked in | Is late | Infraction |
+|--------|------------|---------|------------|
+| ✓      | any        | any     | `none`     |
+| ✗      | ✓          | ✗       | `none`     |
+| ✗      | ✓          | ✓       | `late`     |
+| ✗      | ✗          | —       | `absent`   |
+
+### Lazy Resolution
+
+On every read of attendance data, users with no record are resolved:
+- Before checkin deadline → returned as `pending` (no DB write)
+- After checkin deadline → `absent` record written to DB
+
+`infraction` is recomputed and cached whenever state changes (check-in, excuse submission, admin override).
+
+---
+
 ## API Overview
 
 Routes marked **Admin** require a valid JWT in the `admin_session` httpOnly cookie.
 
 ### Auth
 
-| Method | Route               | Auth  | Description                      |
-|--------|---------------------|-------|----------------------------------|
-| POST   | [`/api/admin/login`](#post-apiadminlogin)  | —     | Verify password, set JWT cookie  |
-| POST   | [`/api/admin/logout`](#post-apiadminlogout) | Admin | Clear JWT cookie                 |
+| Method | Route                                       | Auth  | Description                     |
+|--------|---------------------------------------------|-------|---------------------------------|
+| POST   | [`/api/admin/login`](#post-apiadminlogin)   | —     | Verify password, set JWT cookie |
+| POST   | [`/api/admin/logout`](#post-apiadminlogout) | Admin | Clear JWT cookie                |
 
 ### Stats
 
-| Method | Route                     | Auth  | Description                                  |
-|--------|---------------------------|-------|----------------------------------------------|
-| GET    | [`/api/admin/stats`](#get-apiadminstats)        | Admin | Full overview of all users, meetings, scores |
+| Method | Route                                                 | Auth  | Description                                  |
+|--------|-------------------------------------------------------|-------|----------------------------------------------|
+| GET    | [`/api/admin/stats`](#get-apiadminstats)              | Admin | Full overview of all users, meetings, scores |
 | GET    | [`/api/admin/stats/export`](#get-apiadminstatsexport) | Admin | Download stats as CSV                        |
 
 ### Users
 
-| Method | Route                     | Auth  | Description                      |
-|--------|---------------------------|-------|----------------------------------|
-| POST   | [`/api/users`](#post-apiusers)              | —     | Create a new user                |
-| GET    | [`/api/users`](#get-apiusers)              | Admin | List all users                   |
-| GET    | [`/api/users/lookup/:rzId`](#get-apiuserslookuprzid) | —     | Look up user UUID by RZ ID       |
-| GET    | [`/api/users/:id`](#get-apiusersid)          | —     | Get a user by UUID               |
-| PATCH  | [`/api/users/:id`](#patch-apiusersid)          | Admin | Update a user                    |
-| DELETE | [`/api/users/:id`](#delete-apiusersid)          | Admin | Delete a user                    |
+| Method | Route                                                | Auth  | Description                |
+|--------|------------------------------------------------------|-------|----------------------------|
+| POST   | [`/api/users`](#post-apiusers)                       | —     | Create a new user          |
+| GET    | [`/api/users`](#get-apiusers)                        | Admin | List all users             |
+| GET    | [`/api/users/lookup/:rzId`](#get-apiuserslookuprzid) | —     | Look up user UUID by RZ ID |
+| GET    | [`/api/users/:id`](#get-apiusersid)                  | —     | Get a user by UUID         |
+| PATCH  | [`/api/users/:id`](#patch-apiusersid)                | Admin | Update a user              |
+| DELETE | [`/api/users/:id`](#delete-apiusersid)               | Admin | Delete a user              |
 
 ### Meetings
 
-| Method | Route                                     | Auth  | Description                                |
-|--------|-------------------------------------------|-------|--------------------------------------------|
-| POST   | [`/api/meetings`](#post-apimeetings)                           | Admin | Create a new meeting                       |
-| GET    | [`/api/meetings`](#get-apimeetings)                           | Admin | List all meetings                          |
-| GET    | [`/api/meetings/next`](#get-apimeetingsnext)                      | —     | Get next upcoming meeting + excuse deadline |
-| GET    | [`/api/meetings/:id`](#get-apimeetingsid)                       | Admin | Get meeting info by UUID                   |
-| PATCH  | [`/api/meetings/:id`](#patch-apimeetingsid)                       | Admin | Update a meeting                           |
-| DELETE | [`/api/meetings/:id`](#delete-apimeetingsid)                       | Admin | Delete a meeting                           |
-| GET    | [`/api/meetings/:id/attendance`](#get-apimeetingsidattendance)            | Admin | Get all attendance records for a meeting   |
-| PATCH  | [`/api/meetings/:id/attendance/:userId`](#patch-apimeetingsidattendanceuserid)    | Admin | Override a user's attendance status        |
-| GET    | [`/api/meetings/t/:token`](#get-apimeetingsttoken)                  | —     | Get meeting info by check-in token         |
-| POST   | [`/api/meetings/t/:token/checkin`](#post-apimeetingsttokencheckin)          | —     | Check in to a meeting                      |
-| POST   | [`/api/meetings/t/:token/excuse`](#post-apimeetingsttokenexcuse)           | —     | Submit an excuse before the deadline       |
+| Method | Route                                                                          | Auth  | Description                                      |
+|--------|--------------------------------------------------------------------------------|-------|--------------------------------------------------|
+| POST   | [`/api/meetings`](#post-apimeetings)                                           | Admin | Create a new meeting                             |
+| GET    | [`/api/meetings`](#get-apimeetings)                                            | Admin | List all meetings                                |
+| GET    | [`/api/meetings/next`](#get-apimeetingsnext)                                   | —     | Get next upcoming meeting                        |
+| GET    | [`/api/meetings/:id`](#get-apimeetingsid)                                      | Admin | Get meeting by UUID                              |
+| PATCH  | [`/api/meetings/:id`](#patch-apimeetingsid)                                    | Admin | Update a meeting                                 |
+| DELETE | [`/api/meetings/:id`](#delete-apimeetingsid)                                   | Admin | Delete a meeting                                 |
+| GET    | [`/api/meetings/:id/attendance`](#get-apimeetingsidattendance)                 | Admin | Get attendance for all users                     |
+| PATCH  | [`/api/meetings/:id/attendance/:userId`](#patch-apimeetingsidattendanceuserid) | Admin | Override any check-in detail for a user          |
+| GET    | [`/api/meetings/t/:token`](#get-apimeetingsttoken)                             | —     | Get meeting info by check-in token               |
+| POST   | [`/api/meetings/t/:token/checkin`](#post-apimeetingsttokencheckin)             | —     | Check in to a meeting                            |
+| POST   | [`/api/meetings/t/:token/excuse`](#post-apimeetingsttokenexcuse)               | —     | Submit an excuse before the deadline             |
 
 ---
 
@@ -125,34 +160,46 @@ Request
     "lastName": "Reinke",
     "stats": {
       "totalMeetings": 10,
-      "present": 7,
-      "excused": 2,
       "absent": 1,
-      "beerScore": 1
+      "late": 2,
+      "infractions": 3
     },
     "meetings": [
       {
         "id": "f7e6d5c4-b3a2-1098-fedc-ba9876543210",
-        "linkToken": "abc123",
         "date": "2026-04-10T18:00:00Z",
-        "status": "present"
+        "infraction": "none"
       }
     ]
   }
 ]
 ```
 
-Meetings without a `user_meetings` row are included with `status: "absent"` so the full history is always present and `stats` counts always add up to `totalMeetings`.
+Users with no `user_meeting` record are resolved at read time — `pending` before the deadline, `absent` after.
 
 ---
 
 #### `GET /api/admin/stats/export`
 
-Returns a CSV file download. No JSON body.
+Query parameters
 
+| Param | Values | Required | Default |
+|---|---|---|---|
+| `format` | `csv` \| `xlsx` | no | `csv` |
+| `critical_missing` | integer | no | — |
+
+`critical_missing` applies only to `xlsx`. Colors the `infractions` cell per user: yellow if `infractions === critical_missing - 1`, red if `infractions >= critical_missing`. Individual meeting cells are also colored: red for `absent`, yellow for `late`.
+
+CSV response
 ```
 Content-Type: text/csv
-Content-Disposition: attachment; filename="kastenliste-oil-export.csv"
+Content-Disposition: attachment; filename="kastenliste-oil-export-07-04-2026.csv"
+```
+
+XLSX response
+```
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+Content-Disposition: attachment; filename="kastenliste-oil-export-07-04-2026.xlsx"
 ```
 
 ---
@@ -295,17 +342,16 @@ Request — all fields optional
 
 #### `POST /api/meetings`
 
-Request
+Request — `date`, `excuseDeadlineMinutes`, `checkinDeadline` are required; question-related fields are optional and can be set later via PATCH
 ```json
 {
   "date": "2026-04-10T18:00:00Z",
+  "excuseDeadlineMinutes": 60,
+  "checkinDeadline": "2026-04-10T20:00:00Z",
   "question": "What was the main topic?",
   "answer": "deployment pipeline",
-  "questionRequired": true,
   "checkAnswer": false,
-  "maxRetries": 3,
-  "excuseDeadlineMinutes": 60,
-  "checkinDeadlineMinutes": 120
+  "maxRetries": 3
 }
 ```
 
@@ -315,13 +361,12 @@ Request
   "id": "f7e6d5c4-b3a2-1098-fedc-ba9876543210",
   "linkToken": "abc123",
   "date": "2026-04-10T18:00:00Z",
-  "question": "What was the main topic?",
-  "answer": "deployment pipeline",
-  "questionRequired": true,
-  "checkAnswer": false,
-  "maxRetries": 3,
   "excuseDeadlineMinutes": 60,
-  "checkinDeadlineMinutes": 120
+  "checkinDeadline": "2026-04-10T20:00:00Z",
+  "question": null,
+  "answer": null,
+  "checkAnswer": null,
+  "maxRetries": null
 }
 ```
 
@@ -336,13 +381,12 @@ Request
     "id": "f7e6d5c4-b3a2-1098-fedc-ba9876543210",
     "linkToken": "abc123",
     "date": "2026-04-10T18:00:00Z",
-    "question": "What was the main topic?",
-    "questionRequired": true,
-    "checkAnswer": false,
-    "maxRetries": 3,
     "excuseDeadlineMinutes": 60,
-    "checkinDeadlineMinutes": 120,
-    "answer": "deployment pipeline"
+    "checkinDeadline": "2026-04-10T20:00:00Z",
+    "question": "What was the main topic?",
+    "answer": "deployment pipeline",
+    "checkAnswer": false,
+    "maxRetries": 3
   }
 ]
 ```
@@ -351,14 +395,18 @@ Request
 
 #### `GET /api/meetings/next`
 
-200
+200 — full meeting object; TODO: strip `answer` on non-admin routes once auth is implemented
 ```json
 {
   "id": "f7e6d5c4-b3a2-1098-fedc-ba9876543210",
   "linkToken": "abc123",
   "date": "2026-04-10T18:00:00Z",
-  "excuseDeadline": "2026-04-10T17:00:00Z",
-  "checkinDeadline": "2026-04-10T20:00:00Z"
+  "excuseDeadlineMinutes": 60,
+  "checkinDeadline": "2026-04-10T20:00:00Z",
+  "question": "What was the main topic?",
+  "answer": "deployment pipeline",
+  "checkAnswer": false,
+  "maxRetries": 3
 }
 ```
 
@@ -379,13 +427,12 @@ Request
   "id": "f7e6d5c4-b3a2-1098-fedc-ba9876543210",
   "linkToken": "abc123",
   "date": "2026-04-10T18:00:00Z",
+  "excuseDeadlineMinutes": 60,
+  "checkinDeadline": "2026-04-10T20:00:00Z",
   "question": "What was the main topic?",
   "answer": "deployment pipeline",
-  "questionRequired": true,
   "checkAnswer": false,
-  "maxRetries": 3,
-  "excuseDeadlineMinutes": 60,
-  "checkinDeadlineMinutes": 120
+  "maxRetries": 3
 }
 ```
 
@@ -414,13 +461,12 @@ Request — all fields optional
   "id": "f7e6d5c4-b3a2-1098-fedc-ba9876543210",
   "linkToken": "abc123",
   "date": "2026-04-10T18:00:00Z",
+  "excuseDeadlineMinutes": 60,
+  "checkinDeadline": "2026-04-10T20:00:00Z",
   "question": "Updated question?",
   "answer": "deployment pipeline",
-  "questionRequired": true,
   "checkAnswer": true,
-  "maxRetries": 3,
-  "excuseDeadlineMinutes": 60,
-  "checkinDeadlineMinutes": 120
+  "maxRetries": 3
 }
 ```
 
@@ -453,34 +499,57 @@ Request — all fields optional
 
 #### `GET /api/meetings/:id/attendance`
 
-200
+200 — full meeting object plus resolved attendance for all users
 ```json
 {
   "id": "f7e6d5c4-b3a2-1098-fedc-ba9876543210",
   "linkToken": "abc123",
   "date": "2026-04-10T18:00:00Z",
+  "excuseDeadlineMinutes": 60,
+  "checkinDeadline": "2026-04-10T20:00:00Z",
+  "question": "What was the main topic?",
+  "answer": "deployment pipeline",
+  "checkAnswer": false,
+  "maxRetries": 3,
   "attendance": [
     {
       "userId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       "rzId": "lu451rei",
       "firstName": "Lukas",
       "lastName": "Reinke",
-      "status": "present",
-      "attendanceType": "in_person",
+      "excusedAt": null,
+      "excuseType": null,
       "checkedInAt": "2026-04-10T18:42:00Z",
+      "isLate": false,
+      "attendanceType": "in_person",
       "answerCorrect": true,
-      "excuseSubmittedAt": null
+      "infraction": "none"
     },
     {
       "userId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
       "rzId": "ma123mue",
       "firstName": "Max",
       "lastName": "Mue",
-      "status": "excused",
-      "attendanceType": null,
+      "excusedAt": "2026-04-10T16:45:00Z",
+      "excuseType": "absent",
       "checkedInAt": null,
+      "isLate": null,
+      "attendanceType": null,
       "answerCorrect": null,
-      "excuseSubmittedAt": "2026-04-10T16:45:00Z"
+      "infraction": "none"
+    },
+    {
+      "userId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "rzId": "to789mue",
+      "firstName": "Tom",
+      "lastName": "Mue",
+      "excusedAt": null,
+      "excuseType": null,
+      "checkedInAt": null,
+      "isLate": null,
+      "attendanceType": null,
+      "answerCorrect": null,
+      "infraction": "pending"
     }
   ]
 }
@@ -497,10 +566,17 @@ Request — all fields optional
 
 #### `PATCH /api/meetings/:id/attendance/:userId`
 
+Admin override of any check-in detail — all fields optional; `infraction` is recomputed after update.
+
 Request
 ```json
 {
-  "status": "excused"
+  "checkedInAt": "2026-04-10T19:05:00Z",
+  "isLate": true,
+  "attendanceType": "in_person",
+  "answerCorrect": true,
+  "excusedAt": null,
+  "excuseType": null
 }
 ```
 
@@ -511,11 +587,13 @@ Request
   "rzId": "lu451rei",
   "firstName": "Lukas",
   "lastName": "Reinke",
-  "status": "excused",
-  "attendanceType": null,
-  "checkedInAt": null,
-  "answerCorrect": null,
-  "excuseSubmittedAt": null
+  "excusedAt": null,
+  "excuseType": null,
+  "checkedInAt": "2026-04-10T19:05:00Z",
+  "isLate": true,
+  "attendanceType": "in_person",
+  "answerCorrect": true,
+  "infraction": "late"
 }
 ```
 
@@ -530,17 +608,18 @@ Request
 
 #### `GET /api/meetings/t/:token`
 
-200
+200 — full meeting object; TODO: strip `answer` on non-admin routes once auth is implemented
 ```json
 {
   "id": "f7e6d5c4-b3a2-1098-fedc-ba9876543210",
+  "linkToken": "abc123",
   "date": "2026-04-10T18:00:00Z",
-  "hasQuestion": true,
-  "questionRequired": true,
-  "checkAnswer": false,
+  "excuseDeadlineMinutes": 60,
+  "checkinDeadline": "2026-04-10T20:00:00Z",
   "question": "What was the main topic?",
-  "maxRetries": 3,
-  "checkinDeadline": "2026-04-10T20:00:00Z"
+  "answer": "deployment pipeline",
+  "checkAnswer": false,
+  "maxRetries": 3
 }
 ```
 
@@ -608,10 +687,11 @@ Request
 
 #### `POST /api/meetings/t/:token/excuse`
 
-Request
+Request — `excuseType: "late"` means excusing for being late, `"absent"` means excusing absence
 ```json
 {
-  "rzId": "lu451rei"
+  "rzId": "lu451rei",
+  "excuseType": "absent"
 }
 ```
 
@@ -642,3 +722,85 @@ Request
   "message": "user not found"
 }
 ```
+
+---
+
+## Folder Structure
+
+Domain-separated following NestJS conventions. Each domain owns its controller, service, entity, and DTOs. Shared infrastructure (guards, decorators) lives in `common/`.
+
+```
+backend/
+├── src/
+│   ├── common/
+│   │   ├── guards/
+│   │   │   └── admin-auth.guard.ts     ← JWT cookie guard, applied per-route via decorator
+│   │   └── decorators/
+│   │       └── admin.decorator.ts      ← @Admin() shorthand for @UseGuards(AdminAuthGuard)
+│   │
+│   ├── meetings/
+│   │   ├── meetings.module.ts          ← registers all meetings controllers and services
+│   │   ├── meetings.controller.ts      ← CRUD routes /api/meetings/*
+│   │   ├── meetings.service.ts
+│   │   ├── meeting.entity.ts
+│   │   ├── dto/
+│   │   │   ├── create-meeting.dto.ts
+│   │   │   └── update-meeting.dto.ts
+│   │   ├── attendance/
+│   │   │   ├── attendance.controller.ts  ← GET/PATCH /api/meetings/:id/attendance/*
+│   │   │   ├── attendance.service.ts
+│   │   │   └── dto/
+│   │   │       └── update-attendance.dto.ts
+│   │   └── token/
+│   │       ├── token.controller.ts       ← GET /api/meetings/t/:token, POST checkin, POST excuse
+│   │       └── token.service.ts
+│   │
+│   ├── users/
+│   │   ├── users.module.ts
+│   │   ├── users.controller.ts         ← all /api/users/* routes
+│   │   ├── users.service.ts
+│   │   ├── user.entity.ts
+│   │   └── dto/
+│   │       ├── create-user.dto.ts
+│   │       └── update-user.dto.ts
+│   │
+│   ├── user-meetings/
+│   │   └── user-meeting.entity.ts      ← junction table entity, no controller
+│   │
+│   ├── admin/
+│   │   ├── admin.module.ts             ← imports UsersModule and MeetingsModule
+│   │   ├── auth/
+│   │   │   ├── admin-auth.controller.ts  ← POST /api/admin/login, /logout
+│   │   │   ├── admin-auth.service.ts     ← bcrypt compare, JWT sign
+│   │   │   └── dto/
+│   │   │       └── login.dto.ts
+│   │   └── stats/
+│   │       ├── admin-stats.controller.ts ← GET /api/admin/stats, /export
+│   │       └── admin-stats.service.ts    ← queries across users + meetings
+│   │
+│   ├── app.module.ts                   ← registers all modules, TypeORM, ServeStatic, Config
+│   └── main.ts                         ← bootstrap, global prefix /api, cookie-parser
+│
+├── frontend/                           ← Vite build output served from here
+│   └── dist/
+│
+├── .env
+├── nest-cli.json
+├── tsconfig.json
+└── package.json
+```
+
+### Module dependency graph
+
+```
+AppModule
+├── MeetingsModule
+│   ├── AttendanceService  ← shared lazy resolver, used by attendance and token controllers
+│   └── imports: UsersModule (for User repository)
+├── UsersModule
+└── AdminModule
+    ├── imports: MeetingsModule
+    └── imports: UsersModule
+```
+
+`AdminModule` does not own any entities — it queries through the services exported by `MeetingsModule` and `UsersModule`. The `AdminAuthGuard` from `common/` is registered globally in `AppModule` and applied with `@Admin()` on protected controller methods.

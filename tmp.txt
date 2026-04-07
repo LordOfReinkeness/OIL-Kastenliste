@@ -1,0 +1,12 @@
+// POST /api/meetings/t/:token/checkin
+{
+  "rzId": "lu451rei",
+  "attendanceType": "in_person",
+  "answer": "acrylic nameplates"
+}
+
+// POST /api/meetings/t/:token/excuse
+{
+  "rzId": "lu451rei",
+  "excuseType": "absent"
+}
