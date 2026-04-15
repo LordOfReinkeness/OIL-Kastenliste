@@ -1,5 +1,6 @@
 services:
   app:
+    container_name: oil-kastenliste-app
     image: ghcr.io/lordofreinkeness/oil-kastenliste:latest
     environment:
       NODE_ENV: production
@@ -20,6 +21,7 @@ services:
     restart: unless-stopped
 
   db:
+    container_name: oil-kastenliste-db
     image: postgres:17-alpine
     environment:
       POSTGRES_USER: postgres
