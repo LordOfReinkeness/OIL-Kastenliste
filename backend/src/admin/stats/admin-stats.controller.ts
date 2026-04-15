@@ -1,4 +1,10 @@
-import { BadRequestException, Controller, Get, Query, Res } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Query,
+  Res,
+} from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { AdminStatsService } from './admin-stats.service';
@@ -24,7 +30,9 @@ export class AdminStatsController {
     @Query('critical_missing') criticalMissingRaw?: string,
   ) {
     const criticalMissing =
-      criticalMissingRaw !== undefined ? parseInt(criticalMissingRaw, 10) : undefined;
+      criticalMissingRaw !== undefined
+        ? parseInt(criticalMissingRaw, 10)
+        : undefined;
     if (criticalMissing !== undefined && isNaN(criticalMissing)) {
       throw new BadRequestException('critical_missing must be a number');
     }
