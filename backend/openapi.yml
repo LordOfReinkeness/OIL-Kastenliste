@@ -1,5 +1,43 @@
 openapi: 3.0.0
 paths:
+  /api/auth/login:
+    post:
+      operationId: AuthController_login
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginDto'
+      responses:
+        '200':
+          description: Logged in
+        '401':
+          description: Wrong password
+      summary: Admin login
+      tags:
+        - Auth
+  /api/auth/logout:
+    post:
+      operationId: AuthController_logout
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      summary: Admin logout
+      tags:
+        - Auth
+  /api/auth/me:
+    get:
+      operationId: AuthController_me
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      summary: Check admin session status
+      tags:
+        - Auth
   /api/health:
     get:
       operationId: HealthController_check
@@ -34,6 +72,21 @@ paths:
         '200':
           description: List of users
       summary: List all users
+      tags:
+        - Users
+  /api/users/validate-rz-id/{rzId}:
+    get:
+      operationId: UsersController_validateRzId
+      parameters:
+        - name: rzId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '{ valid: boolean }'
+      summary: Check whether an RZ ID matches the allowed format
       tags:
         - Users
   /api/users/lookup/{rzId}:
@@ -402,6 +455,9 @@ tags: []
 servers: []
 components:
   schemas:
+    LoginDto:
+      type: object
+      properties: {}
     CreateUserDto:
       type: object
       properties:

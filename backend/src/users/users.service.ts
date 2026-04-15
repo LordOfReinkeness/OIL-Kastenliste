@@ -7,6 +7,7 @@ import { User } from './user.entity';
 import { UserMeeting } from '../user-meetings/user-meeting.entity';
 import { Meeting } from '../meetings/meeting.entity';
 import { computeInfractions } from '../user-meetings/compute-infractions';
+import { RZ_ID_REGEX, RZ_ID_EXCEPTIONS } from './rz-id';
 
 @Injectable()
 export class UsersService {
@@ -18,6 +19,10 @@ export class UsersService {
     @InjectRepository(Meeting)
     private readonly meetings: Repository<Meeting>,
   ) {}
+
+  validateRzId(rzId: string): { valid: boolean } {
+    return { valid: RZ_ID_REGEX.test(rzId) || RZ_ID_EXCEPTIONS.includes(rzId) };
+  }
 
   async create(dto: CreateUserDto): Promise<User> {
     const existing = await this.users.findOneBy({ rzId: dto.rzId });

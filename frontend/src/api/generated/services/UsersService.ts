@@ -39,6 +39,23 @@ export class UsersService {
         });
     }
     /**
+     * Check whether an RZ ID matches the allowed format
+     * @param rzId
+     * @returns any { valid: boolean }
+     * @throws ApiError
+     */
+    public static usersControllerValidateRzId(
+        rzId: string,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/users/validate-rz-id/{rzId}',
+            path: {
+                'rzId': rzId,
+            },
+        });
+    }
+    /**
      * Look up user by RZ ID
      * @param rzId
      * @returns any User ID and RZ ID

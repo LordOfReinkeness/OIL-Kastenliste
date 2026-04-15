@@ -41,6 +41,15 @@ export class UsersController {
   }
 
   // must be before /:id to avoid routing conflict
+  @Get('validate-rz-id/:rzId')
+  @Public()
+  @ApiOperation({ summary: 'Check whether an RZ ID matches the allowed format' })
+  @ApiOkResponse({ description: '{ valid: boolean }' })
+  validateRzId(@Param('rzId') rzId: string) {
+    return this.usersService.validateRzId(rzId);
+  }
+
+  // must be before /:id to avoid routing conflict
   @Get('lookup/:rzId')
   @Public()
   @ApiOperation({ summary: 'Look up user by RZ ID' })

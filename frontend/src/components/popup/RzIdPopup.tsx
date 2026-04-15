@@ -1,17 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Popup } from './Popup';
 import { UsersService, ApiError } from '../../api';
 import { useUserSession } from '../../hooks/useUserSession';
 import styles from './RzIdPopup.module.css';
 
 const DESCRIPTION = 'Gib deine HTWG RZ-ID ein, um dein Profil zu laden. Kein Passwort nötig.';
-
-const RZ_ID_REGEX = /^[a-z]{2}\d{3}[a-z]{3}$/;
-const RZ_ID_EXCEPTIONS = ['terb'];
-
-function isValidRzId(value: string): boolean {
-  return RZ_ID_REGEX.test(value) || RZ_ID_EXCEPTIONS.includes(value);
-}
 
 export function RzIdPopup() {
   const { setUser } = useUserSession();
@@ -22,6 +15,21 @@ export function RzIdPopup() {
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [rzIdValid, setRzIdValid] = useState<boolean | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!rzId) {
+      setRzIdValid(null);
+      return;
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      const result = await UsersService.usersControllerValidateRzId(rzId);
+      setRzIdValid(result.valid);
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [rzId]);
 
   async function handleLookup() {
     if (!rzId.trim()) return;
@@ -122,7 +130,7 @@ export function RzIdPopup() {
 
       {error && <p className={styles.error}>{error}</p>}
 
-      {!expanded && rzId && !isValidRzId(rzId) && (
+      {!expanded && rzId && rzIdValid === false && (
         <p className={styles.error}>Format: ab123cde (z.B. ma123mus)</p>
       )}
 
@@ -130,7 +138,7 @@ export function RzIdPopup() {
         <button
           className={styles.button}
           onClick={handleLookup}
-          disabled={loading || !rzId.trim() || !isValidRzId(rzId)}
+          disabled={loading || !rzId.trim() || !rzIdValid}
         >
           {loading ? 'Laden…' : 'Weiter'}
         </button>

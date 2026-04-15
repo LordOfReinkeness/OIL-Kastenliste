@@ -1,6 +1,6 @@
 import { registerDecorator, ValidationOptions } from 'class-validator';
 
-const RZ_ID_REGEX = /^[a-z]{2}\d{3}[a-z]{3}$/;
+export const RZ_ID_REGEX = /^[a-z]{2}\d{3}[a-z]{3}$/;
 
 export const RZ_ID_EXCEPTIONS = ['terb'];
 
