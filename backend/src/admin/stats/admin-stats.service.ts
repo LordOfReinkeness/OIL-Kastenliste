@@ -4,11 +4,8 @@ import { Repository } from 'typeorm';
 import * as ExcelJS from 'exceljs';
 import { MeetingsService } from '../../meetings/meetings.service';
 import { UsersService } from '../../users/users.service';
-import {
-  ExcuseType,
-  InfractionType,
-  UserMeeting,
-} from '../../user-meetings/user-meeting.entity';
+import { ExcuseType, UserMeeting } from '../../user-meetings/user-meeting.entity';
+import { computeInfractions } from '../../user-meetings/compute-infractions';
 import { Meeting } from '../../meetings/meeting.entity';
 
 @Injectable()
@@ -42,37 +39,45 @@ export class AdminStatsService {
       let late = 0;
       let pending = 0;
       let totalCheckins = 0;
+      let totalInfractions = 0;
 
       const meetingEntries = meetings.map((meeting) => {
         const existing = userRecords.get(meeting.id);
         if (existing) {
-          if (existing.infraction === InfractionType.ABSENT) absent++;
-          if (existing.infraction === InfractionType.LATE) late++;
-          if (existing.checkedInAt) totalCheckins++;
-          return { id: meeting.id, date: meeting.date, infraction: existing.infraction };
+          if (existing.isLate && existing.excuseType !== ExcuseType.LATE) late++;
+          if (!existing.liveCheckedInAt && existing.excuseType !== ExcuseType.ABSENT) absent++;
+          if (existing.liveCheckedInAt) totalCheckins++;
+          totalInfractions += existing.infractions;
+          return { id: meeting.id, date: meeting.date, infractions: existing.infractions };
         }
 
         const isPastDeadline = now >= new Date(meeting.checkinDeadline);
         if (isPastDeadline) {
+          const infractions = computeInfractions(
+            { isLate: null, liveCheckedInAt: null, postCheckedInAt: null, excuseType: null },
+            meeting.capInfractions,
+          );
           toCreate.push(
             this.userMeetings.create({
               userId: user.id,
               meetingId: meeting.id,
               excusedAt: null,
               excuseType: null,
-              checkedInAt: null,
+              liveCheckedInAt: null,
+              postCheckedInAt: null,
               isLate: null,
               attendanceType: null,
               answerCorrect: null,
-              infraction: InfractionType.ABSENT,
+              infractions,
             }),
           );
           absent++;
-          return { id: meeting.id, date: meeting.date, infraction: InfractionType.ABSENT };
+          totalInfractions += infractions;
+          return { id: meeting.id, date: meeting.date, infractions };
         }
 
         pending++;
-        return { id: meeting.id, date: meeting.date, infraction: InfractionType.PENDING };
+        return { id: meeting.id, date: meeting.date, infractions: null };
       });
 
       return {
@@ -86,7 +91,7 @@ export class AdminStatsService {
           pending,
           absent,
           late,
-          infractions: absent + late,
+          infractions: totalInfractions,
         },
         meetings: meetingEntries,
       };
@@ -120,7 +125,7 @@ export class AdminStatsService {
       const meetingCols = meetings.map((meeting) => {
         const r = userRecords.get(meeting.id);
         if (r?.excusedAt && r.excuseType === ExcuseType.ABSENT) excusedAbsent++;
-        return r?.infraction ?? InfractionType.PENDING;
+        return r?.infractions ?? 'pending';
       });
 
       return [
@@ -162,29 +167,28 @@ export class AdminStatsService {
     }));
 
     sheet.columns = [
-      { header: 'rzId',           key: 'rzId',           width: 12 },
-      { header: 'firstName',      key: 'firstName',      width: 14 },
-      { header: 'lastName',       key: 'lastName',       width: 14 },
+      { header: 'rzId',           key: 'rzId',          width: 12 },
+      { header: 'firstName',      key: 'firstName',     width: 14 },
+      { header: 'lastName',       key: 'lastName',      width: 14 },
       ...meetingDateCols,
-      { header: 'total_checkins', key: 'totalCheckins',  width: 14 },
-      { header: 'pending',        key: 'pending',        width: 10 },
-      { header: 'late',           key: 'late',           width: 8  },
-      { header: 'excused_absent', key: 'excusedAbsent',  width: 14 },
-      { header: 'infractions',    key: 'infractions',    width: 12 },
+      { header: 'total_checkins', key: 'totalCheckins', width: 14 },
+      { header: 'pending',        key: 'pending',       width: 10 },
+      { header: 'late',           key: 'late',          width: 8  },
+      { header: 'excused_absent', key: 'excusedAbsent', width: 14 },
+      { header: 'infractions',    key: 'infractions',   width: 12 },
     ];
 
-    // Bold header row
     sheet.getRow(1).font = { bold: true };
 
     for (const user of stats) {
       const userRecords = recordMap.get(user.id) ?? new Map<string, UserMeeting>();
       let excusedAbsent = 0;
 
-      const meetingCols: Record<string, string> = {};
+      const meetingCols: Record<string, string | number> = {};
       for (const meeting of meetings) {
         const r = userRecords.get(meeting.id);
         if (r?.excusedAt && r.excuseType === ExcuseType.ABSENT) excusedAbsent++;
-        meetingCols[meeting.id] = r?.infraction ?? InfractionType.PENDING;
+        meetingCols[meeting.id] = r?.infractions ?? 'pending';
       }
 
       const row = sheet.addRow({
@@ -199,15 +203,15 @@ export class AdminStatsService {
         infractions: user.stats.infractions,
       });
 
-      // Color infraction cells per meeting
+      // Color meeting infraction cells
       for (const meeting of meetings) {
-        const infraction = meetingCols[meeting.id];
+        const val = meetingCols[meeting.id];
         const col = sheet.getColumn(meeting.id);
         const cell = row.getCell(col.number);
-        if (infraction === InfractionType.ABSENT) {
+        if (typeof val === 'number' && val > 0) {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC7CE' } };
-        } else if (infraction === InfractionType.LATE) {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFCC' } };
+        } else if (val === 'pending') {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD3D3D3' } };
         }
       }
 

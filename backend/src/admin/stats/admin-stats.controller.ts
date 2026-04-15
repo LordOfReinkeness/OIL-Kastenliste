@@ -10,7 +10,6 @@ export class AdminStatsController {
   @Get()
   @ApiOperation({ summary: 'Full overview of all users, meetings, and scores' })
   @ApiOkResponse({ description: 'Stats list' })
-  // TODO: @Admin() once auth is implemented
   getStats() {
     return this.adminStatsService.getStats();
   }
@@ -19,7 +18,6 @@ export class AdminStatsController {
   @ApiOperation({ summary: 'Download stats as CSV or XLSX' })
   @ApiQuery({ name: 'format', enum: ['csv', 'xlsx'], required: false })
   @ApiQuery({ name: 'critical_missing', required: false, type: Number })
-  // TODO: @Admin() once auth is implemented
   async export(
     @Res() res: Response,
     @Query('format') format: string = 'csv',

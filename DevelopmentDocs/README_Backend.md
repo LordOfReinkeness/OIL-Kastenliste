@@ -26,36 +26,43 @@
 
 ## Attendance State Machine
 
-Each user has one `user_meeting` record per meeting. The record is created lazily — on check-in, excuse submission, or on the first read after the checkin deadline passes.
+Each user has one `user_meeting` record per meeting. The record is created lazily — on live check-in, post check-in, excuse submission, or on the first read after `checkinDeadline` passes.
 
 ### Fields
 
-| Field            | Type      | Description                                              |
-|------------------|-----------|----------------------------------------------------------|
-| `excusedAt`      | timestamp | When excuse was submitted; null if none                  |
-| `excuseType`     | enum      | `late` = excusing for being late, `absent` = excusing absence |
-| `checkedInAt`    | timestamp | When user checked in; null if not checked in             |
-| `isLate`         | boolean   | Set manually by admin                                    |
-| `attendanceType` | string    | `in_person` or `remote`; null if not checked in         |
-| `answerCorrect`  | boolean   | null if no question or not checked in                    |
-| `infraction`     | enum      | Cached: `none` / `late` / `absent`                      |
+| Field              | Type      | Description                                                   |
+|--------------------|-----------|---------------------------------------------------------------|
+| `excusedAt`        | timestamp | When excuse was submitted; null if none                       |
+| `excuseType`       | enum      | `late` = excusing for being late, `absent` = excusing absence |
+| `liveCheckedInAt`  | timestamp | When user checked in during the meeting; null if not          |
+| `postCheckedInAt`  | timestamp | When user did the post-meeting check-in; null if not          |
+| `isLate`           | boolean   | Set manually by admin                                         |
+| `attendanceType`   | string    | `in_person` or `remote`; set at live check-in                 |
+| `answerCorrect`    | boolean   | null if no question or no post check-in                       |
+| `answerAttempts`   | int       | Tracks wrong answer attempts; default 0                       |
+| `infractions`      | int       | Cached count 0–3; recomputed on every state change            |
 
 ### Infraction Logic
 
-| Excuse | Checked in | Is late | Infraction |
-|--------|------------|---------|------------|
-| ✓      | any        | any     | `none`     |
-| ✗      | ✓          | ✗       | `none`     |
-| ✗      | ✓          | ✓       | `late`     |
-| ✗      | ✗          | —       | `absent`   |
+Up to three infractions per meeting, optionally capped at 1 via `meeting.capInfractions`.
+
+| Condition                                              | +1 Infraction       |
+|--------------------------------------------------------|---------------------|
+| `isLate` and `excuseType != 'late'`                    | late without excuse  |
+| no `liveCheckedInAt` and `excuseType != 'absent'`      | absent without excuse |
+| no `postCheckedInAt` and `excuseType != 'absent'`      | not checked in post  |
 
 ### Lazy Resolution
 
 On every read of attendance data, users with no record are resolved:
-- Before checkin deadline → returned as `pending` (no DB write)
-- After checkin deadline → `absent` record written to DB
+- Before `checkinDeadline` → returned as `infractions: null` (pending, no DB write)
+- After `checkinDeadline` → record written with computed infractions
 
-`infraction` is recomputed and cached whenever state changes (check-in, excuse submission, admin override).
+`infractions` is recomputed and cached whenever state changes (live check-in, post check-in, excuse submission, admin override).
+
+### Live Check-in Window
+
+`meeting.liveCheckinOpen` is resolved lazily on read: if `now > meeting.date + checkinWindowMinutes`, the window is treated as closed regardless of the stored value. Admin can open/close manually via `PATCH /api/meetings/:id`.
 
 ---
 
@@ -79,30 +86,32 @@ Routes marked **Admin** require a valid JWT in the `admin_session` httpOnly cook
 
 ### Users
 
-| Method | Route                                                | Auth  | Description                |
-|--------|------------------------------------------------------|-------|----------------------------|
-| POST   | [`/api/users`](#post-apiusers)                       | —     | Create a new user          |
-| GET    | [`/api/users`](#get-apiusers)                        | Admin | List all users             |
-| GET    | [`/api/users/lookup/:rzId`](#get-apiuserslookuprzid) | —     | Look up user UUID by RZ ID |
-| GET    | [`/api/users/:id`](#get-apiusersid)                  | —     | Get a user by UUID         |
-| PATCH  | [`/api/users/:id`](#patch-apiusersid)                | Admin | Update a user              |
-| DELETE | [`/api/users/:id`](#delete-apiusersid)               | Admin | Delete a user              |
+| Method | Route                                                | Auth  | Description                      |
+|--------|------------------------------------------------------|-------|----------------------------------|
+| POST   | [`/api/users`](#post-apiusers)                       | —     | Create a new user                |
+| GET    | [`/api/users`](#get-apiusers)                        | Admin | List all users                   |
+| GET    | [`/api/users/lookup/:rzId`](#get-apiuserslookuprzid) | —     | Look up user UUID by RZ ID       |
+| GET    | [`/api/users/:id`](#get-apiusersid)                  | —     | Get a user by UUID               |
+| GET    | [`/api/users/:id/stats`](#get-apiusersidstats)       | —     | Get meeting stats for a user     |
+| PATCH  | [`/api/users/:id`](#patch-apiusersid)                | Admin | Update a user                    |
+| DELETE | [`/api/users/:id`](#delete-apiusersid)               | Admin | Delete a user                    |
 
 ### Meetings
 
-| Method | Route                                                                          | Auth  | Description                                      |
-|--------|--------------------------------------------------------------------------------|-------|--------------------------------------------------|
-| POST   | [`/api/meetings`](#post-apimeetings)                                           | Admin | Create a new meeting                             |
-| GET    | [`/api/meetings`](#get-apimeetings)                                            | Admin | List all meetings                                |
-| GET    | [`/api/meetings/next`](#get-apimeetingsnext)                                   | —     | Get next upcoming meeting                        |
-| GET    | [`/api/meetings/:id`](#get-apimeetingsid)                                      | Admin | Get meeting by UUID                              |
-| PATCH  | [`/api/meetings/:id`](#patch-apimeetingsid)                                    | Admin | Update a meeting                                 |
-| DELETE | [`/api/meetings/:id`](#delete-apimeetingsid)                                   | Admin | Delete a meeting                                 |
-| GET    | [`/api/meetings/:id/attendance`](#get-apimeetingsidattendance)                 | Admin | Get attendance for all users                     |
-| PATCH  | [`/api/meetings/:id/attendance/:userId`](#patch-apimeetingsidattendanceuserid) | Admin | Override any check-in detail for a user          |
-| GET    | [`/api/meetings/t/:token`](#get-apimeetingsttoken)                             | —     | Get meeting info by check-in token               |
-| POST   | [`/api/meetings/t/:token/checkin`](#post-apimeetingsttokencheckin)             | —     | Check in to a meeting                            |
-| POST   | [`/api/meetings/t/:token/excuse`](#post-apimeetingsttokenexcuse)               | —     | Submit an excuse before the deadline             |
+| Method | Route                                                                               | Auth  | Description                                      |
+|--------|-------------------------------------------------------------------------------------|-------|--------------------------------------------------|
+| POST   | [`/api/meetings`](#post-apimeetings)                                                | Admin | Create a new meeting                             |
+| GET    | [`/api/meetings`](#get-apimeetings)                                                 | Admin | List all meetings                                |
+| GET    | [`/api/meetings/next`](#get-apimeetingsnext)                                        | —     | Get next upcoming meeting                        |
+| GET    | [`/api/meetings/:id`](#get-apimeetingsid)                                           | Admin | Get meeting by UUID                              |
+| PATCH  | [`/api/meetings/:id`](#patch-apimeetingsid)                                         | Admin | Update a meeting (incl. `liveCheckinOpen`)       |
+| DELETE | [`/api/meetings/:id`](#delete-apimeetingsid)                                        | Admin | Delete a meeting                                 |
+| GET    | [`/api/meetings/:id/attendance`](#get-apimeetingsidattendance)                      | Admin | Get attendance for all users                     |
+| PATCH  | [`/api/meetings/:id/attendance/:userId`](#patch-apimeetingsidattendanceuserid)      | Admin | Override any check-in detail for a user          |
+| GET    | [`/api/meetings/t/:token`](#get-apimeetingsttoken)                                  | —     | Get meeting info by check-in token               |
+| POST   | [`/api/meetings/t/:token/live-checkin`](#post-apimeetingsttokenlivecheckin)         | —     | Check in during the meeting                      |
+| POST   | [`/api/meetings/t/:token/post-checkin`](#post-apimeetingsttokenpostcheckin)         | —     | Post-meeting check-in before closing deadline    |
+| POST   | [`/api/meetings/t/:token/excuse`](#post-apimeetingsttokenexcuse)                   | —     | Submit an excuse before the deadline             |
 
 ---
 
@@ -160,22 +169,24 @@ Request
     "lastName": "Reinke",
     "stats": {
       "totalMeetings": 10,
-      "absent": 1,
-      "late": 2,
-      "infractions": 3
+      "totalCheckins": 8,
+      "pending": 1,
+      "late": 1,
+      "absent": 0,
+      "infractions": 2
     },
     "meetings": [
       {
         "id": "f7e6d5c4-b3a2-1098-fedc-ba9876543210",
         "date": "2026-04-10T18:00:00Z",
-        "infraction": "none"
+        "infractions": 0
       }
     ]
   }
 ]
 ```
 
-Users with no `user_meeting` record are resolved at read time — `pending` before the deadline, `absent` after.
+Users with no `user_meeting` record are resolved at read time — `infractions: null` (pending) before `checkinDeadline`, record written with computed infractions after.
 
 ---
 
@@ -338,19 +349,77 @@ Request — all fields optional
 
 ---
 
+#### `GET /api/users/:id/stats`
+
+200
+```json
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "rzId": "lu451rei",
+  "firstName": "Lukas",
+  "lastName": "Reinke",
+  "totalInfractions": 2,
+  "meetings": [
+    {
+      "id": "f7e6d5c4-b3a2-1098-fedc-ba9876543210",
+      "date": "2026-04-03T18:00:00Z",
+      "excuseType": null,
+      "liveCheckedIn": true,
+      "postCheckedIn": true,
+      "isLate": false,
+      "answerCorrect": true,
+      "infractions": 0
+    },
+    {
+      "id": "...",
+      "date": "2026-04-10T18:00:00Z",
+      "excuseType": "absent",
+      "liveCheckedIn": false,
+      "postCheckedIn": false,
+      "isLate": null,
+      "answerCorrect": null,
+      "infractions": 0
+    },
+    {
+      "id": "...",
+      "date": "2026-04-17T18:00:00Z",
+      "excuseType": null,
+      "liveCheckedIn": false,
+      "postCheckedIn": false,
+      "isLate": null,
+      "answerCorrect": null,
+      "infractions": null
+    }
+  ]
+}
+```
+
+`infractions: null` means the meeting deadline has not passed yet (pending). `totalInfractions` only sums resolved meetings.
+
+404
+```json
+{
+  "message": "user not found"
+}
+```
+
+---
+
 ### Meetings
 
 #### `POST /api/meetings`
 
-Request — `date`, `excuseDeadlineMinutes`, `checkinDeadline` are required; question-related fields are optional and can be set later via PATCH
+Request — `date`, `excuseDeadlineMinutes`, `checkinDeadline` are required; all other fields are optional
 ```json
 {
   "date": "2026-04-10T18:00:00Z",
   "excuseDeadlineMinutes": 60,
   "checkinDeadline": "2026-04-10T20:00:00Z",
+  "checkinWindowMinutes": 60,
+  "capInfractions": false,
   "question": "What was the main topic?",
   "answer": "deployment pipeline",
-  "checkAnswer": false,
+  "checkAnswer": true,
   "maxRetries": 3
 }
 ```
@@ -363,10 +432,13 @@ Request — `date`, `excuseDeadlineMinutes`, `checkinDeadline` are required; que
   "date": "2026-04-10T18:00:00Z",
   "excuseDeadlineMinutes": 60,
   "checkinDeadline": "2026-04-10T20:00:00Z",
+  "checkinWindowMinutes": 60,
+  "liveCheckinOpen": false,
+  "capInfractions": false,
   "question": null,
   "answer": null,
-  "checkAnswer": null,
-  "maxRetries": null
+  "checkAnswer": true,
+  "maxRetries": 3
 }
 ```
 
@@ -507,9 +579,12 @@ Request — all fields optional
   "date": "2026-04-10T18:00:00Z",
   "excuseDeadlineMinutes": 60,
   "checkinDeadline": "2026-04-10T20:00:00Z",
+  "checkinWindowMinutes": 60,
+  "liveCheckinOpen": false,
+  "capInfractions": false,
   "question": "What was the main topic?",
   "answer": "deployment pipeline",
-  "checkAnswer": false,
+  "checkAnswer": true,
   "maxRetries": 3,
   "attendance": [
     {
@@ -519,11 +594,12 @@ Request — all fields optional
       "lastName": "Reinke",
       "excusedAt": null,
       "excuseType": null,
-      "checkedInAt": "2026-04-10T18:42:00Z",
+      "liveCheckedInAt": "2026-04-10T18:10:00Z",
+      "postCheckedInAt": "2026-04-10T19:05:00Z",
       "isLate": false,
       "attendanceType": "in_person",
       "answerCorrect": true,
-      "infraction": "none"
+      "infractions": 0
     },
     {
       "userId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
@@ -532,11 +608,12 @@ Request — all fields optional
       "lastName": "Mue",
       "excusedAt": "2026-04-10T16:45:00Z",
       "excuseType": "absent",
-      "checkedInAt": null,
+      "liveCheckedInAt": null,
+      "postCheckedInAt": null,
       "isLate": null,
       "attendanceType": null,
       "answerCorrect": null,
-      "infraction": "none"
+      "infractions": 0
     },
     {
       "userId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
@@ -545,11 +622,12 @@ Request — all fields optional
       "lastName": "Mue",
       "excusedAt": null,
       "excuseType": null,
-      "checkedInAt": null,
+      "liveCheckedInAt": null,
+      "postCheckedInAt": null,
       "isLate": null,
       "attendanceType": null,
       "answerCorrect": null,
-      "infraction": "pending"
+      "infractions": null
     }
   ]
 }
@@ -566,12 +644,13 @@ Request — all fields optional
 
 #### `PATCH /api/meetings/:id/attendance/:userId`
 
-Admin override of any check-in detail — all fields optional; `infraction` is recomputed after update.
+Admin override of any check-in detail — all fields optional; `infractions` is recomputed after update.
 
 Request
 ```json
 {
-  "checkedInAt": "2026-04-10T19:05:00Z",
+  "liveCheckedInAt": "2026-04-10T18:15:00Z",
+  "postCheckedInAt": "2026-04-10T19:05:00Z",
   "isLate": true,
   "attendanceType": "in_person",
   "answerCorrect": true,
@@ -589,11 +668,12 @@ Request
   "lastName": "Reinke",
   "excusedAt": null,
   "excuseType": null,
-  "checkedInAt": "2026-04-10T19:05:00Z",
+  "liveCheckedInAt": "2026-04-10T18:15:00Z",
+  "postCheckedInAt": "2026-04-10T19:05:00Z",
   "isLate": true,
   "attendanceType": "in_person",
   "answerCorrect": true,
-  "infraction": "late"
+  "infractions": 1
 }
 ```
 
@@ -616,9 +696,12 @@ Request
   "date": "2026-04-10T18:00:00Z",
   "excuseDeadlineMinutes": 60,
   "checkinDeadline": "2026-04-10T20:00:00Z",
+  "checkinWindowMinutes": 60,
+  "liveCheckinOpen": true,
+  "capInfractions": false,
   "question": "What was the main topic?",
   "answer": "deployment pipeline",
-  "checkAnswer": false,
+  "checkAnswer": true,
   "maxRetries": 3
 }
 ```
@@ -632,13 +715,56 @@ Request
 
 ---
 
-#### `POST /api/meetings/t/:token/checkin`
+#### `POST /api/meetings/t/:token/live-checkin`
+
+Only accepted while `liveCheckinOpen` is true and `now < date + checkinWindowMinutes`.
 
 Request
 ```json
 {
   "rzId": "lu451rei",
-  "attendanceType": "in_person",
+  "attendanceType": "in_person"
+}
+```
+
+200
+```json
+{
+  "message": "checked in"
+}
+```
+
+403 — live check-in window not open
+```json
+{
+  "message": "live check-in is not open"
+}
+```
+
+409 — already checked in live
+```json
+{
+  "message": "already checked in"
+}
+```
+
+404 — user or meeting not found
+```json
+{
+  "message": "user not found"
+}
+```
+
+---
+
+#### `POST /api/meetings/t/:token/post-checkin`
+
+Only accepted after `meeting.date` and before `checkinDeadline`. Not accepted if user already did a live check-in.
+
+Request
+```json
+{
+  "rzId": "lu451rei",
   "answer": "deployment pipeline"
 }
 ```
@@ -669,10 +795,24 @@ Request
 }
 ```
 
-409 — already checked in
+403 — post check-in deadline passed
+```json
+{
+  "message": "check-in deadline passed"
+}
+```
+
+409 — already did post check-in
 ```json
 {
   "message": "already checked in"
+}
+```
+
+409 — already did live check-in, post check-in not required
+```json
+{
+  "message": "already checked in live"
 }
 ```
 

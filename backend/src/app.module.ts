@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { HealthModule } from './health/health.module';
 import { MeetingsModule } from './meetings/meetings.module';
@@ -22,6 +23,7 @@ import { UsersModule } from './users/users.module';
         synchronize: config.get('NODE_ENV') !== 'production',
       }),
     }),
+    AuthModule,
     HealthModule,
     UsersModule,
     MeetingsModule,

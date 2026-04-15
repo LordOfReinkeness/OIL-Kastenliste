@@ -18,12 +18,14 @@ import {
 import CreateUserDto from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
+import { Public } from '../auth/public.decorator';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
+  @Public()
   @ApiOperation({ summary: 'Create a new user' })
   @ApiCreatedResponse({ description: 'User created' })
   @ApiConflictResponse({ description: 'RZ ID already exists' })
@@ -34,13 +36,13 @@ export class UsersController {
   @Get()
   @ApiOperation({ summary: 'List all users' })
   @ApiOkResponse({ description: 'List of users' })
-  // TODO: @Admin() once auth is implemented
   findAll() {
     return this.usersService.findAll();
   }
 
   // must be before /:id to avoid routing conflict
   @Get('lookup/:rzId')
+  @Public()
   @ApiOperation({ summary: 'Look up user by RZ ID' })
   @ApiOkResponse({ description: 'User ID and RZ ID' })
   @ApiNotFoundResponse({ description: 'User not found' })
@@ -48,7 +50,18 @@ export class UsersController {
     return this.usersService.findByRzId(rzId);
   }
 
+  // must be before /:id to avoid routing conflict
+  @Get(':id/stats')
+  @Public()
+  @ApiOperation({ summary: 'Get meeting stats for a user' })
+  @ApiOkResponse({ description: 'User stats' })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  getUserStats(@Param('id') id: string) {
+    return this.usersService.getUserStats(id);
+  }
+
   @Get(':id')
+  @Public()
   @ApiOperation({ summary: 'Get a user by UUID' })
   @ApiOkResponse({ description: 'User found' })
   @ApiNotFoundResponse({ description: 'User not found' })
@@ -60,7 +73,6 @@ export class UsersController {
   @ApiOperation({ summary: 'Update a user' })
   @ApiOkResponse({ description: 'User updated' })
   @ApiNotFoundResponse({ description: 'User not found' })
-  // TODO: @Admin() once auth is implemented
   update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
     return this.usersService.update(id, dto);
   }
@@ -70,7 +82,6 @@ export class UsersController {
   @ApiOperation({ summary: 'Delete a user' })
   @ApiOkResponse({ description: 'User deleted' })
   @ApiNotFoundResponse({ description: 'User not found' })
-  // TODO: @Admin() once auth is implemented
   async remove(@Param('id') id: string) {
     await this.usersService.remove(id);
     return { message: 'deleted' };

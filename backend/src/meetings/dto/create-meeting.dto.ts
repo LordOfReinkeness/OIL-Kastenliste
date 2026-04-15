@@ -23,6 +23,17 @@ export class CreateMeetingDto {
   @IsDateString()
   checkinDeadline: string;
 
+  @ApiPropertyOptional({ example: 60 })
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  checkinWindowMinutes?: number;
+
+  @ApiPropertyOptional({ example: false })
+  @IsBoolean()
+  @IsOptional()
+  capInfractions?: boolean;
+
   @ApiPropertyOptional({ example: 'What was the main topic?' })
   @IsString()
   @IsNotEmpty()
@@ -35,7 +46,7 @@ export class CreateMeetingDto {
   @IsOptional()
   answer?: string;
 
-  @ApiPropertyOptional({ example: false })
+  @ApiPropertyOptional({ example: true })
   @IsBoolean()
   @IsOptional()
   checkAnswer?: boolean;

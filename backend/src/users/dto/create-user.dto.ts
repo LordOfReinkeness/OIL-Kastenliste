@@ -1,12 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { IsRzId } from '../rz-id';
 
 class CreateUserDto {
   @ApiProperty({ example: 'lu451rei' })
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }: { value: string }) => value.trim())
+  @IsRzId()
+  @Transform(({ value }: { value: string }) => value.trim().toLowerCase())
   rzId: string;
 
   @ApiProperty({ example: 'Lukas' })

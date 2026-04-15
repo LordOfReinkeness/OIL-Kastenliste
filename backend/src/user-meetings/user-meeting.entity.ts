@@ -7,13 +7,6 @@ export enum ExcuseType {
   ABSENT = 'absent',
 }
 
-export enum InfractionType {
-  NONE = 'none',
-  LATE = 'late',
-  ABSENT = 'absent',
-  PENDING = 'pending',
-}
-
 @Entity('user_meetings')
 export class UserMeeting {
   @PrimaryGeneratedColumn('uuid')
@@ -40,7 +33,10 @@ export class UserMeeting {
   excuseType: ExcuseType | null;
 
   @Column({ type: 'timestamptz', nullable: true })
-  checkedInAt: Date | null;
+  liveCheckedInAt: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  postCheckedInAt: Date | null;
 
   @Column({ type: 'boolean', nullable: true })
   isLate: boolean | null;
@@ -54,6 +50,6 @@ export class UserMeeting {
   @Column({ type: 'int', default: 0 })
   answerAttempts: number;
 
-  @Column({ type: 'enum', enum: InfractionType, default: InfractionType.ABSENT })
-  infraction: InfractionType;
+  @Column({ type: 'int', default: 0 })
+  infractions: number;
 }

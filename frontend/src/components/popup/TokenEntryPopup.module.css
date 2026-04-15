@@ -1,0 +1,111 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.input {
+  border: 1px solid var(--color-border);
+  padding: 14px var(--spacing-sm);
+  font-size: var(--text-sm);
+  font-family: var(--font-family);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  border-color: var(--color-text);
+}
+
+.input:disabled {
+  background: var(--color-surface);
+  color: var(--color-muted);
+}
+
+.segmented {
+  display: flex;
+}
+
+.segment {
+  flex: 1;
+  padding: 14px var(--spacing-sm);
+  font-size: var(--text-sm);
+  font-family: var(--font-family);
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-text);
+}
+
+.segment + .segment {
+  border-left: none;
+}
+
+.segment.active {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.segment:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button {
+  background: var(--color-accent);
+  color: #ffffff;
+  border: none;
+  padding: 14px var(--spacing-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+  width: 100%;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-accent-dark);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.info {
+  font-size: var(--text-sm);
+  margin: 0;
+  padding: var(--spacing-sm);
+  background: var(--color-surface);
+  border-left: 4px solid var(--color-text);
+}
+
+.muted {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  margin: 0;
+}
+
+.error {
+  font-size: var(--text-xs);
+  margin: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-surface);
+  border-left: 4px solid var(--color-text);
+}
+
+.success {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  margin: 0;
+  padding: var(--spacing-sm);
+  background: var(--color-surface);
+  border-left: 4px solid var(--color-accent);
+}

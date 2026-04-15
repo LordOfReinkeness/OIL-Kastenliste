@@ -1,0 +1,76 @@
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-md) var(--spacing-sm);
+  gap: var(--spacing-md);
+}
+
+@media (min-width: 640px) {
+  .content {
+    flex: unset;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    width: 100%;
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+}
+
+.stats {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  margin: 0;
+  text-align: center;
+}
+
+.greeting {
+  font-size: var(--text-h2);
+  font-weight: 700;
+  margin: 0;
+  text-align: center;
+}
+
+/* Mobile: actions fill remaining height, buttons split it equally */
+.actions {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+@media (min-width: 640px) {
+  .actions {
+    flex: unset;
+    flex-direction: row;
+  }
+}
+
+.actionButton {
+  flex: 1;
+  min-height: 80px;
+  background: #f5f5f5;
+  color: var(--color-text);
+  border: 1px solid var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+}
+
+.actionButton:hover:not(:disabled) {
+  background: var(--color-text);
+  color: #ffffff;
+}
+
+.actionButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.successMessage {
+  font-size: var(--text-xs);
+  margin: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-surface);
+  border-left: 4px solid var(--color-accent);
+}

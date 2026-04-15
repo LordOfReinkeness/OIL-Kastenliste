@@ -1,0 +1,28 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.present {
+  background: #009B91;
+  color: #ffffff;
+}
+
+.late {
+  background: #D9E5EC;
+  color: #000000;
+}
+
+.absent {
+  background: #000000;
+  color: #ffffff;
+}
+
+.pending {
+  color: var(--color-muted);
+}

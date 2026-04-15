@@ -4,11 +4,8 @@ import { Repository } from 'typeorm';
 import { Meeting } from '../meeting.entity';
 import { MeetingsService } from '../meetings.service';
 import { UsersService } from '../../users/users.service';
-import {
-  ExcuseType,
-  InfractionType,
-  UserMeeting,
-} from '../../user-meetings/user-meeting.entity';
+import { ExcuseType, UserMeeting } from '../../user-meetings/user-meeting.entity';
+import { computeInfractions } from '../../user-meetings/compute-infractions';
 import { User } from '../../users/user.entity';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 
@@ -19,11 +16,12 @@ export interface AttendanceRecord {
   lastName: string;
   excusedAt: Date | null;
   excuseType: ExcuseType | null;
-  checkedInAt: Date | null;
+  liveCheckedInAt: Date | null;
+  postCheckedInAt: Date | null;
   isLate: boolean | null;
   attendanceType: 'in_person' | 'remote' | null;
   answerCorrect: boolean | null;
-  infraction: InfractionType;
+  infractions: number | null; // null = pending
 }
 
 @Injectable()
@@ -35,15 +33,11 @@ export class AttendanceService {
     private readonly usersService: UsersService,
   ) {}
 
-  computeInfraction(
-    record: Pick<UserMeeting, 'excusedAt' | 'checkedInAt' | 'isLate'>,
-  ): InfractionType {
-    if (record.excusedAt) return InfractionType.NONE;
-    if (record.checkedInAt) return record.isLate ? InfractionType.LATE : InfractionType.NONE;
-    return InfractionType.ABSENT;
+  computeInfractions(record: UserMeeting, capInfractions: boolean): number {
+    return computeInfractions(record, capInfractions);
   }
 
-  private toRecord(user: User, um: UserMeeting, infraction: InfractionType): AttendanceRecord {
+  private toRecord(user: User, um: UserMeeting, infractions: number | null): AttendanceRecord {
     return {
       userId: user.id,
       rzId: user.rzId,
@@ -51,11 +45,12 @@ export class AttendanceService {
       lastName: user.lastName,
       excusedAt: um.excusedAt,
       excuseType: um.excuseType,
-      checkedInAt: um.checkedInAt,
+      liveCheckedInAt: um.liveCheckedInAt,
+      postCheckedInAt: um.postCheckedInAt,
       isLate: um.isLate,
       attendanceType: um.attendanceType,
       answerCorrect: um.answerCorrect,
-      infraction,
+      infractions,
     };
   }
 
@@ -67,11 +62,12 @@ export class AttendanceService {
       lastName: user.lastName,
       excusedAt: null,
       excuseType: null,
-      checkedInAt: null,
+      liveCheckedInAt: null,
+      postCheckedInAt: null,
       isLate: null,
       attendanceType: null,
       answerCorrect: null,
-      infraction: InfractionType.PENDING,
+      infractions: null,
     };
   }
 
@@ -91,7 +87,7 @@ export class AttendanceService {
 
     const attendance = users.map((user) => {
       const existing = recordMap.get(user.id);
-      if (existing) return this.toRecord(user, existing, existing.infraction);
+      if (existing) return this.toRecord(user, existing, existing.infractions);
 
       if (!isPastDeadline) return this.pendingRecord(user);
 
@@ -100,14 +96,18 @@ export class AttendanceService {
         meetingId,
         excusedAt: null,
         excuseType: null,
-        checkedInAt: null,
+        liveCheckedInAt: null,
+        postCheckedInAt: null,
         isLate: null,
         attendanceType: null,
         answerCorrect: null,
-        infraction: InfractionType.ABSENT,
+        infractions: computeInfractions(
+          { isLate: null, liveCheckedInAt: null, postCheckedInAt: null, excuseType: null },
+          meeting.capInfractions,
+        ),
       });
       toCreate.push(absent);
-      return this.toRecord(user, absent, InfractionType.ABSENT);
+      return this.toRecord(user, absent, absent.infractions);
     });
 
     if (toCreate.length) await this.userMeetings.save(toCreate);
@@ -133,18 +133,18 @@ export class AttendanceService {
         userId,
         excusedAt: null,
         excuseType: null,
-        checkedInAt: null,
+        liveCheckedInAt: null,
+        postCheckedInAt: null,
         isLate: null,
         attendanceType: null,
         answerCorrect: null,
-        infraction: InfractionType.ABSENT,
       });
     }
 
     Object.assign(record, dto);
-    record.infraction = this.computeInfraction(record);
+    record.infractions = computeInfractions(record, meeting.capInfractions);
     await this.userMeetings.save(record);
 
-    return this.toRecord(user, record, record.infraction);
+    return this.toRecord(user, record, record.infractions);
   }
 }

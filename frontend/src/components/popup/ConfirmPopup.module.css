@@ -1,0 +1,51 @@
+.message {
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.buttonSecondary {
+  flex: 1;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-text);
+  padding: 14px var(--spacing-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+}
+
+.buttonSecondary:hover:not(:disabled) {
+  background: var(--color-surface);
+}
+
+.buttonSecondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.buttonDanger {
+  flex: 1;
+  background: var(--color-text);
+  color: var(--color-bg);
+  border: none;
+  padding: 14px var(--spacing-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+}
+
+.buttonDanger:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.buttonDanger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

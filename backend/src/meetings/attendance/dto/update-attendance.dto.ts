@@ -3,32 +3,37 @@ import { IsBoolean, IsDateString, IsEnum, IsIn, IsOptional } from 'class-validat
 import { ExcuseType } from '../../../user-meetings/user-meeting.entity';
 
 export class UpdateAttendanceDto {
-  @ApiPropertyOptional({ example: '2026-04-10T19:05:00Z' })
+  @ApiPropertyOptional({ type: 'string', format: 'date-time', nullable: true, example: '2026-04-10T18:10:00Z' })
   @IsDateString()
   @IsOptional()
-  checkedInAt?: Date | null;
+  liveCheckedInAt?: string | null;
 
-  @ApiPropertyOptional({ example: true })
+  @ApiPropertyOptional({ type: 'string', format: 'date-time', nullable: true, example: '2026-04-10T19:05:00Z' })
+  @IsDateString()
+  @IsOptional()
+  postCheckedInAt?: string | null;
+
+  @ApiPropertyOptional({ type: 'boolean', nullable: true, example: true })
   @IsBoolean()
   @IsOptional()
   isLate?: boolean | null;
 
-  @ApiPropertyOptional({ example: 'in_person', enum: ['in_person', 'remote'] })
+  @ApiPropertyOptional({ type: 'string', enum: ['in_person', 'remote'], nullable: true, example: 'in_person' })
   @IsIn(['in_person', 'remote'])
   @IsOptional()
   attendanceType?: 'in_person' | 'remote' | null;
 
-  @ApiPropertyOptional({ example: true })
+  @ApiPropertyOptional({ type: 'boolean', nullable: true, example: true })
   @IsBoolean()
   @IsOptional()
   answerCorrect?: boolean | null;
 
-  @ApiPropertyOptional({ example: null })
+  @ApiPropertyOptional({ type: 'string', format: 'date-time', nullable: true, example: null })
   @IsDateString()
   @IsOptional()
-  excusedAt?: Date | null;
+  excusedAt?: string | null;
 
-  @ApiPropertyOptional({ enum: ExcuseType, example: null })
+  @ApiPropertyOptional({ enum: ExcuseType, nullable: true, example: null })
   @IsEnum(ExcuseType)
   @IsOptional()
   excuseType?: ExcuseType | null;

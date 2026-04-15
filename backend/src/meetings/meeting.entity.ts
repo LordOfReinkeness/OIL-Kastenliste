@@ -17,15 +17,24 @@ export class Meeting {
   @Column({ type: 'timestamptz' })
   checkinDeadline: Date;
 
+  @Column({ type: 'int', default: 60 })
+  checkinWindowMinutes: number;
+
+  @Column({ type: 'boolean', default: false })
+  liveCheckinOpen: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  capInfractions: boolean;
+
   @Column({ type: 'text', nullable: true })
   question: string | null;
 
   @Column({ type: 'text', nullable: true })
   answer: string | null;
 
-  @Column({ type: 'boolean', nullable: true })
-  checkAnswer: boolean | null;
+  @Column({ type: 'boolean', default: true })
+  checkAnswer: boolean;
 
-  @Column({ type: 'int', nullable: true })
-  maxRetries: number | null;
+  @Column({ type: 'int', default: 3 })
+  maxRetries: number;
 }

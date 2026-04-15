@@ -34,7 +34,24 @@ export class UpdateMeetingDto {
   @Transform(({ value }: { value: string }) => value?.trim())
   answer?: string;
 
+  @ApiPropertyOptional({ example: 60 })
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  @Transform(({ value }) => (value !== undefined ? Number(value) : undefined))
+  checkinWindowMinutes?: number;
+
   @ApiPropertyOptional({ example: false })
+  @IsBoolean()
+  @IsOptional()
+  liveCheckinOpen?: boolean;
+
+  @ApiPropertyOptional({ example: false })
+  @IsBoolean()
+  @IsOptional()
+  capInfractions?: boolean;
+
+  @ApiPropertyOptional({ example: true })
   @IsBoolean()
   @IsOptional()
   checkAnswer?: boolean;

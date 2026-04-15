@@ -53,6 +53,23 @@ paths:
       summary: Look up user by RZ ID
       tags:
         - Users
+  /api/users/{id}/stats:
+    get:
+      operationId: UsersController_getUserStats
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User stats
+        '404':
+          description: User not found
+      summary: Get meeting stats for a user
+      tags:
+        - Users
   /api/users/{id}:
     get:
       operationId: UsersController_findOne
@@ -108,6 +125,149 @@ paths:
       summary: Delete a user
       tags:
         - Users
+  /api/meetings/t/{token}:
+    get:
+      operationId: TokenController_getMeeting
+      parameters:
+        - name: token
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Meeting found
+        '404':
+          description: Meeting not found
+      summary: Get meeting info by check-in token
+      tags:
+        - Token
+  /api/meetings/t/{token}/live-checkin:
+    post:
+      operationId: TokenController_liveCheckIn
+      parameters:
+        - name: token
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LiveCheckinDto'
+      responses:
+        '200':
+          description: Checked in
+        '403':
+          description: Live check-in window not open
+        '404':
+          description: User or meeting not found
+        '409':
+          description: Already checked in
+      summary: Check in during the meeting
+      tags:
+        - Token
+  /api/meetings/t/{token}/post-checkin:
+    post:
+      operationId: TokenController_postCheckIn
+      parameters:
+        - name: token
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCheckinDto'
+      responses:
+        '200':
+          description: Checked in or wrong answer
+        '403':
+          description: Deadline passed or max retries reached
+        '404':
+          description: User or meeting not found
+        '409':
+          description: Already checked in or already checked in live
+      summary: Post-meeting check-in before closing deadline
+      tags:
+        - Token
+  /api/meetings/t/{token}/excuse:
+    post:
+      operationId: TokenController_submitExcuse
+      parameters:
+        - name: token
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExcuseDto'
+      responses:
+        '200':
+          description: Excuse submitted
+        '403':
+          description: Excuse deadline passed
+        '404':
+          description: User or meeting not found
+        '409':
+          description: Already submitted
+      summary: Submit an excuse before the deadline
+      tags:
+        - Token
+  /api/meetings/{id}/attendance:
+    get:
+      operationId: AttendanceController_getAttendance
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Meeting with attendance list
+        '404':
+          description: Meeting not found
+      summary: Get attendance for all users
+      tags:
+        - Attendance
+  /api/meetings/{id}/attendance/{userId}:
+    patch:
+      operationId: AttendanceController_patchAttendance
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: userId
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAttendanceDto'
+      responses:
+        '200':
+          description: Updated attendance record
+        '404':
+          description: Meeting or user not found
+      summary: Override attendance for a user
+      tags:
+        - Attendance
   /api/meetings:
     post:
       operationId: MeetingsController_create
@@ -200,51 +360,39 @@ paths:
       summary: Delete a meeting
       tags:
         - Meetings
-  /api/meetings/{id}/attendance:
+  /api/admin/stats:
     get:
-      operationId: AttendanceController_getAttendance
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
+      operationId: AdminStatsController_getStats
+      parameters: []
       responses:
         '200':
-          description: Meeting with attendance list
-        '404':
-          description: Meeting not found
-      summary: Get attendance for all users
+          description: Stats list
+      summary: Full overview of all users, meetings, and scores
       tags:
-        - Attendance
-  /api/meetings/{id}/attendance/{userId}:
-    patch:
-      operationId: AttendanceController_patchAttendance
+        - AdminStats
+  /api/admin/stats/export:
+    get:
+      operationId: AdminStatsController_export
       parameters:
-        - name: id
-          required: true
-          in: path
+        - name: format
+          required: false
+          in: query
           schema:
+            enum:
+              - csv
+              - xlsx
             type: string
-        - name: userId
-          required: true
-          in: path
+        - name: critical_missing
+          required: false
+          in: query
           schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateAttendanceDto'
+            type: number
       responses:
         '200':
-          description: Updated attendance record
-        '404':
-          description: Meeting or user not found
-      summary: Override attendance for a user
+          description: ''
+      summary: Download stats as CSV or XLSX
       tags:
-        - Attendance
+        - AdminStats
 info:
   title: Kastenliste OIL
   description: ''
@@ -282,6 +430,87 @@ components:
         lastName:
           type: string
           example: Reinke
+    LiveCheckinDto:
+      type: object
+      properties:
+        rzId:
+          type: string
+          example: lu451rei
+        attendanceType:
+          type: string
+          example: in_person
+          enum:
+            - in_person
+            - remote
+      required:
+        - rzId
+        - attendanceType
+    PostCheckinDto:
+      type: object
+      properties:
+        rzId:
+          type: string
+          example: lu451rei
+        answer:
+          type: string
+          example: deployment pipeline
+      required:
+        - rzId
+    ExcuseDto:
+      type: object
+      properties:
+        rzId:
+          type: string
+          example: lu451rei
+        excuseType:
+          type: string
+          enum:
+            - late
+            - absent
+          example: absent
+      required:
+        - rzId
+        - excuseType
+    UpdateAttendanceDto:
+      type: object
+      properties:
+        liveCheckedInAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-04-10T18:10:00Z'
+        postCheckedInAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-04-10T19:05:00Z'
+        isLate:
+          type: boolean
+          nullable: true
+          example: true
+        attendanceType:
+          type: string
+          enum:
+            - in_person
+            - remote
+          nullable: true
+          example: in_person
+        answerCorrect:
+          type: boolean
+          nullable: true
+          example: true
+        excusedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        excuseType:
+          type: string
+          enum:
+            - late
+            - absent
+          nullable: true
+          example: null
     CreateMeetingDto:
       type: object
       properties:
@@ -294,6 +523,12 @@ components:
         checkinDeadline:
           type: string
           example: '2026-04-10T20:00:00Z'
+        checkinWindowMinutes:
+          type: number
+          example: 60
+        capInfractions:
+          type: boolean
+          example: false
         question:
           type: string
           example: What was the main topic?
@@ -302,7 +537,7 @@ components:
           example: deployment pipeline
         checkAnswer:
           type: boolean
-          example: false
+          example: true
         maxRetries:
           type: number
           example: 3
@@ -328,36 +563,18 @@ components:
         answer:
           type: string
           example: deployment pipeline
-        checkAnswer:
+        checkinWindowMinutes:
+          type: number
+          example: 60
+        liveCheckinOpen:
           type: boolean
           example: false
+        capInfractions:
+          type: boolean
+          example: false
+        checkAnswer:
+          type: boolean
+          example: true
         maxRetries:
           type: number
           example: 3
-    UpdateAttendanceDto:
-      type: object
-      properties:
-        checkedInAt:
-          type: object
-          example: '2026-04-10T19:05:00Z'
-        isLate:
-          type: object
-          example: true
-        attendanceType:
-          type: string
-          example: in_person
-          enum:
-            - in_person
-            - remote
-        answerCorrect:
-          type: object
-          example: true
-        excusedAt:
-          type: object
-          example: null
-        excuseType:
-          type: string
-          enum:
-            - late
-            - absent
-          example: null
