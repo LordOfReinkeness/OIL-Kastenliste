@@ -7,7 +7,6 @@ export class AuthService {
 
   validatePassword(password: string): boolean {
     const adminPassword = this.config.getOrThrow<string>('ADMIN_PASSWORD');
-    console.log(adminPassword);
     return password === adminPassword;
   }
 }

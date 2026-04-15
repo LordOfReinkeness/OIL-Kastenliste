@@ -1,15 +1,22 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import session from 'express-session';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    logger: ['log', 'warn', 'error'],
+  });
+  app.set('trust proxy', 1);
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
   app.enableCors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
+    origin: [
+      'http://localhost:5173',
+      'https://oil-kastenliste.lukas-reinke.de',
+    ],
     credentials: true,
   });
 
@@ -20,8 +27,8 @@ async function bootstrap() {
       saveUninitialized: false,
       cookie: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        secure: process.env.COOKIE_SECURE === 'true',
+        sameSite: process.env.COOKIE_SECURE === 'true' ? 'strict' : 'lax',
         maxAge: 24 * 60 * 60 * 1000,
       },
     }),

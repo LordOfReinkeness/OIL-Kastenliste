@@ -1,5 +1,6 @@
 import { join } from 'path';
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -36,4 +37,20 @@ import { UsersModule } from './users/users.module';
     AdminModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  private readonly logger = new Logger('HTTP');
+
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply((req: any, res: any, next: () => void) => {
+        const { method, originalUrl } = req;
+        const start = Date.now();
+        res.on('finish', () => {
+          const ms = Date.now() - start;
+          this.logger.log(`${method} ${originalUrl} ${res.statusCode} +${ms}ms`);
+        });
+        next();
+      })
+      .forRoutes('*');
+  }
+}
