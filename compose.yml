@@ -16,7 +16,7 @@ services:
         condition: service_healthy
     networks:
       - internal
-      - nginx_proxy
+      - nginx_proxy-network
     restart: unless-stopped
 
   db:
@@ -41,5 +41,5 @@ volumes:
 
 networks:
   internal:
-  nginx_proxy:
+  nginx_proxy-network:
     external: true
