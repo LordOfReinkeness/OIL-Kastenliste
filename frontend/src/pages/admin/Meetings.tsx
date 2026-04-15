@@ -83,7 +83,7 @@ function MeetingRow({ meeting, onEdited, onDeleted }: { meeting: Meeting; onEdit
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [liveOpen, setLiveOpen] = useState(meeting.liveCheckinOpen);
+  const liveOpen = meeting.liveCheckinOpen;
 
   async function handleDelete() {
     setDeleting(true);

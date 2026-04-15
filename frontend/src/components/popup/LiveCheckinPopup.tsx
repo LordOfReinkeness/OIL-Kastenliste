@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Popup } from './Popup';
-import { TokenService, ApiError } from '../../api';
+import { TokenService, ApiError, LiveCheckinDto } from '../../api';
 import { useUserSession } from '../../hooks/useUserSession';
 import styles from './CheckinPopup.module.css';
 
@@ -43,7 +43,7 @@ export function LiveCheckinPopup({ token }: LiveCheckinPopupProps) {
     try {
       await TokenService.tokenControllerLiveCheckIn(token, {
         rzId: user.rzId,
-        attendanceType,
+        attendanceType: attendanceType as LiveCheckinDto.attendanceType,
       });
       setStep('success');
     } catch (e) {

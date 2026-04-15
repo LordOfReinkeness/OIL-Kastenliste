@@ -1,10 +1,6 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+    image: ghcr.io/lordofreinkeness/oil-kastenliste:latest
     environment:
       NODE_ENV: production
       DB_HOST: db
@@ -12,12 +8,15 @@ services:
       DB_USER: postgres
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: kastenliste
+      DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-false}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       SESSION_SECRET: ${SESSION_SECRET}
-      DB_SYNCHRONIZE: "true"
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - internal
+      - nginx_proxy
     restart: unless-stopped
 
   db:
@@ -33,7 +32,14 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - internal
     restart: unless-stopped
 
 volumes:
   kastenliste_db:
+
+networks:
+  internal:
+  nginx_proxy:
+    external: true
