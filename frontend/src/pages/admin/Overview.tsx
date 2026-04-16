@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { AdminStatsService } from '../../api';
-import { StatusBadge } from '../../components/ui/StatusBadge';
+import { MeetingCell, MeetingBadge } from '../../components/ui/MeetingCell';
 import { EditAttendancePopup } from '../../components/popup/EditAttendancePopup';
 import styles from './Overview.module.css';
 
 interface MeetingStat {
   id: string;
   date: string;
-  infraction: 'none' | 'late' | 'absent' | 'pending';
+  liveCheckedIn: boolean | null;
+  postCheckedIn: boolean | null;
+  isLate: boolean | null;
+  excuseType: 'late' | 'absent' | null;
+  infractions: number | null;
 }
 
 interface UserStats {
@@ -71,10 +75,30 @@ export function Overview() {
     <div className={styles.page}>
       <div className={styles.toolbar}>
         <div className={styles.legend}>
-          <StatusBadge infraction="none" />    <span>Anwesend</span>
-          <StatusBadge infraction="late" />    <span>Verspätet</span>
-          <StatusBadge infraction="absent" />  <span>Abwesend</span>
-          <StatusBadge infraction="pending" /> <span>Ausstehend</span>
+          <span className={styles.legendGroup}>
+            <MeetingBadge type="present" label="L ✓" /> Live anwesend
+          </span>
+          <span className={styles.legendGroup}>
+            <MeetingBadge type="absent" label="L ✗" /> Live abwesend
+          </span>
+          <span className={styles.legendGroup}>
+            <MeetingBadge type="present" label="P ✓" /> Post-Checkin ok
+          </span>
+          <span className={styles.legendGroup}>
+            <MeetingBadge type="absent" label="P ✗" /> Post-Checkin fehlt
+          </span>
+          <span className={styles.legendGroup}>
+            <MeetingBadge type="excusedAbsent" label="E: abwesend" /> entschuldigt abwesend
+          </span>
+          <span className={styles.legendGroup}>
+            <MeetingBadge type="excusedLate" label="E: verspätet" /> entschuldigt verspätet
+          </span>
+          <span className={styles.legendGroup}>
+            <MeetingBadge type="lateUnexcused" label="! verspätet" /> unentschuldigt verspätet
+          </span>
+          <span className={styles.legendGroup}>
+            <MeetingBadge type="pillBad" label="2" /> Kasten
+          </span>
         </div>
         <div className={styles.exportButtons}>
           <button className={styles.exportButton} onClick={handleExport}>
@@ -96,41 +120,51 @@ export function Overview() {
                   {shortDate(m.date)}
                 </th>
               ))}
-              <th className={`${styles.th} ${styles.summaryCol}`}>Meetings</th>
               <th className={`${styles.th} ${styles.summaryCol}`}>Abwesend</th>
               <th className={`${styles.th} ${styles.summaryCol}`}>Verspätet</th>
+              <th className={`${styles.th} ${styles.summaryCol}`}>Entschuldigt</th>
               <th className={`${styles.th} ${styles.summaryCol} ${styles.kastenliste}`}>Kasten</th>
             </tr>
           </thead>
           <tbody>
             {users.map(user => {
               const byMeetingId = Object.fromEntries(
-                user.meetings.map(m => [m.id, m.infraction])
+                user.meetings.map(m => [m.id, m])
               );
+              const excusedCount = user.meetings.filter(m => m.excuseType === 'absent').length;
               return (
                 <tr key={user.id} className={styles.row}>
                   <td className={`${styles.td} ${styles.nameCol}`}>
                     <span className={styles.fullName}>{user.lastName}, {user.firstName}</span>
                     <span className={styles.rzId}>{user.rzId}</span>
                   </td>
-                  {meetings.map(m => (
-                    <td key={m.id} className={`${styles.td} ${styles.meetingCol}`}>
-                      <button
-                        className={styles.cellButton}
-                        onClick={() => setEditTarget({
-                          meetingId: m.id,
-                          meetingDate: m.date,
-                          userId: user.id,
-                          userName: `${user.lastName}, ${user.firstName}`,
-                        })}
-                      >
-                        <StatusBadge infraction={byMeetingId[m.id] ?? 'pending'} />
-                      </button>
-                    </td>
-                  ))}
-                  <td className={`${styles.td} ${styles.summaryCol}`}>{user.stats.totalMeetings}</td>
+                  {meetings.map(m => {
+                    const stat = byMeetingId[m.id];
+                    return (
+                      <td key={m.id} className={`${styles.td} ${styles.meetingCol}`}>
+                        <button
+                          className={styles.cellButton}
+                          onClick={() => setEditTarget({
+                            meetingId: m.id,
+                            meetingDate: m.date,
+                            userId: user.id,
+                            userName: `${user.lastName}, ${user.firstName}`,
+                          })}
+                        >
+                          <MeetingCell
+                            liveCheckedIn={stat?.liveCheckedIn ?? null}
+                            postCheckedIn={stat?.postCheckedIn ?? null}
+                            isLate={stat?.isLate ?? null}
+                            excuseType={stat?.excuseType ?? null}
+                            infractions={stat?.infractions ?? null}
+                          />
+                        </button>
+                      </td>
+                    );
+                  })}
                   <td className={`${styles.td} ${styles.summaryCol}`}>{user.stats.absent}</td>
                   <td className={`${styles.td} ${styles.summaryCol}`}>{user.stats.late}</td>
+                  <td className={`${styles.td} ${styles.summaryCol}`}>{excusedCount}</td>
                   <td className={`${styles.td} ${styles.summaryCol} ${styles.kastenliste}`}>{user.stats.infractions}</td>
                 </tr>
               );

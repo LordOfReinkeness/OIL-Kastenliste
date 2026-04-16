@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { TokenService, MeetingsService } from '../api';
+import { TokenService } from '../api';
 import styles from './LiveScreen.module.css';
 
 export function LiveScreen() {
   const { token } = useParams<{ token: string }>();
   const [meeting, setMeeting] = useState<any>(null);
   const [liveOpen, setLiveOpen] = useState(false);
-  const [toggling, setToggling] = useState(false);
 
   const url = `${window.location.origin}/live-checkin/${token}`;
 
@@ -22,17 +21,6 @@ export function LiveScreen() {
   }
 
   useEffect(() => { load(); }, [token]);
-
-  async function handleToggle() {
-    if (!meeting) return;
-    setToggling(true);
-    try {
-      await MeetingsService.meetingsControllerUpdate(meeting.id, { liveCheckinOpen: !liveOpen });
-      setLiveOpen(v => !v);
-    } finally {
-      setToggling(false);
-    }
-  }
 
   const dateStr = meeting
     ? new Date(meeting.date).toLocaleDateString('de-DE', {
@@ -59,13 +47,6 @@ export function LiveScreen() {
         <p className={styles.token}>{token}</p>
         <p className={styles.urlHint}>{url}</p>
 
-        <button
-          className={liveOpen ? styles.buttonClose : styles.buttonOpen}
-          onClick={handleToggle}
-          disabled={toggling || !meeting}
-        >
-          {toggling ? '…' : liveOpen ? 'Fenster schließen' : 'Fenster öffnen'}
-        </button>
       </div>
     </div>
   );

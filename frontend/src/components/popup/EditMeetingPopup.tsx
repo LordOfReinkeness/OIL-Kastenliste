@@ -171,7 +171,7 @@ export function EditMeetingPopup({ meetingId, onClose, onSaved }: EditMeetingPop
             <input id="liveCheckinOpen" type="checkbox"
               checked={liveCheckinOpen} onChange={e => setLiveCheckinOpen(e.target.checked)}
               disabled={submitting} />
-            <label htmlFor="liveCheckinOpen" className={styles.checkLabel}>Live Check-in jetzt geöffnet</label>
+            <label htmlFor="liveCheckinOpen" className={styles.checkLabel}>Live Check-in erlaubt (öffnet automatisch zum Meetingstart)</label>
           </div>
 
           <div className={styles.divider} />

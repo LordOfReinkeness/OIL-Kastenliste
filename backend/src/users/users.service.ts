@@ -102,7 +102,7 @@ export class UsersService {
       }
 
       const resolved = computeInfractions(
-        { isLate: null, liveCheckedInAt: null, postCheckedInAt: null, excuseType: null },
+        { isLate: null, liveCheckedInAt: null, postCheckedInAt: null, excuseType: null, liveCheckinDeadline: new Date(new Date(meeting.date).getTime() + meeting.checkinWindowMinutes * 60_000), checkinDeadline: new Date(meeting.checkinDeadline) },
         meeting.capInfractions,
       );
       totalInfractions += resolved;

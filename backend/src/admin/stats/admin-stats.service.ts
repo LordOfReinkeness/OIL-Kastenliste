@@ -48,13 +48,21 @@ export class AdminStatsService {
           if (!existing.liveCheckedInAt && existing.excuseType !== ExcuseType.ABSENT) absent++;
           if (existing.liveCheckedInAt) totalCheckins++;
           totalInfractions += existing.infractions;
-          return { id: meeting.id, date: meeting.date, infractions: existing.infractions };
+          return {
+            id: meeting.id,
+            date: meeting.date,
+            liveCheckedIn: existing.liveCheckedInAt !== null,
+            postCheckedIn: existing.postCheckedInAt !== null,
+            isLate: existing.isLate,
+            excuseType: existing.excuseType,
+            infractions: existing.infractions,
+          };
         }
 
         const isPastDeadline = now >= new Date(meeting.checkinDeadline);
         if (isPastDeadline) {
           const infractions = computeInfractions(
-            { isLate: null, liveCheckedInAt: null, postCheckedInAt: null, excuseType: null },
+            { isLate: null, liveCheckedInAt: null, postCheckedInAt: null, excuseType: null, liveCheckinDeadline: new Date(new Date(meeting.date).getTime() + meeting.checkinWindowMinutes * 60_000), checkinDeadline: new Date(meeting.checkinDeadline) },
             meeting.capInfractions,
           );
           toCreate.push(
@@ -73,11 +81,27 @@ export class AdminStatsService {
           );
           absent++;
           totalInfractions += infractions;
-          return { id: meeting.id, date: meeting.date, infractions };
+          return {
+            id: meeting.id,
+            date: meeting.date,
+            liveCheckedIn: false,
+            postCheckedIn: false,
+            isLate: null,
+            excuseType: null,
+            infractions,
+          };
         }
 
         pending++;
-        return { id: meeting.id, date: meeting.date, infractions: null };
+        return {
+          id: meeting.id,
+          date: meeting.date,
+          liveCheckedIn: null,
+          postCheckedIn: null,
+          isLate: null,
+          excuseType: null,
+          infractions: null,
+        };
       });
 
       return {

@@ -30,11 +30,13 @@ export class TokenService {
   }
 
   private isLiveWindowOpen(meeting: Meeting): boolean {
+    // Admin can force-close the window early
     if (!meeting.liveCheckinOpen) return false;
-    const windowEnd = new Date(
-      new Date(meeting.date).getTime() + meeting.checkinWindowMinutes * 60_000,
-    );
-    return new Date() < windowEnd;
+    const now = new Date();
+    const windowStart = new Date(meeting.date);
+    const windowEnd = new Date(meeting.date.getTime() + meeting.checkinWindowMinutes * 60_000);
+    // Window auto-opens at meeting start and closes after checkinWindowMinutes
+    return now >= windowStart && now < windowEnd;
   }
 
   async liveCheckIn(token: string, dto: LiveCheckinDto): Promise<{ message: string }> {
@@ -51,7 +53,7 @@ export class TokenService {
     if (!record) record = this.userMeetings.create({ meetingId: meeting.id, userId: user.id });
     record.liveCheckedInAt = new Date();
     record.attendanceType = dto.attendanceType;
-    record.infractions = computeInfractions(record, meeting.capInfractions);
+    record.infractions = computeInfractions({ ...record, liveCheckinDeadline: new Date(new Date(meeting.date).getTime() + meeting.checkinWindowMinutes * 60_000), checkinDeadline: new Date(meeting.checkinDeadline) }, meeting.capInfractions);
     await this.userMeetings.save(record);
 
     return { message: 'checked in' };
@@ -80,7 +82,7 @@ export class TokenService {
       if (!record) record = this.userMeetings.create({ meetingId: meeting.id, userId: user.id });
       record.postCheckedInAt = new Date();
       record.answerCorrect = meeting.question ? true : null;
-      record.infractions = computeInfractions(record, meeting.capInfractions);
+      record.infractions = computeInfractions({ ...record, liveCheckinDeadline: new Date(new Date(meeting.date).getTime() + meeting.checkinWindowMinutes * 60_000), checkinDeadline: new Date(meeting.checkinDeadline) }, meeting.capInfractions);
       await this.userMeetings.save(record);
       return { message: 'checked in', answerCorrect: meeting.question ? true : undefined };
     }
@@ -97,7 +99,7 @@ export class TokenService {
     if (correct) {
       record.postCheckedInAt = new Date();
       record.answerCorrect = true;
-      record.infractions = computeInfractions(record, meeting.capInfractions);
+      record.infractions = computeInfractions({ ...record, liveCheckinDeadline: new Date(new Date(meeting.date).getTime() + meeting.checkinWindowMinutes * 60_000), checkinDeadline: new Date(meeting.checkinDeadline) }, meeting.capInfractions);
       await this.userMeetings.save(record);
       return { message: 'checked in', answerCorrect: true };
     }
@@ -130,7 +132,7 @@ export class TokenService {
     const record = existing ?? this.userMeetings.create({ meetingId: meeting.id, userId: user.id });
     record.excusedAt = new Date();
     record.excuseType = dto.excuseType;
-    record.infractions = computeInfractions(record, meeting.capInfractions);
+    record.infractions = computeInfractions({ ...record, liveCheckinDeadline: new Date(new Date(meeting.date).getTime() + meeting.checkinWindowMinutes * 60_000), checkinDeadline: new Date(meeting.checkinDeadline) }, meeting.capInfractions);
     await this.userMeetings.save(record);
 
     return { message: 'excuse submitted' };

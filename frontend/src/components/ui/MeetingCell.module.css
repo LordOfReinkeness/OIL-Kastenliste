@@ -1,0 +1,75 @@
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 2px;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.present {
+  background: #009B91;
+  color: #fff;
+}
+
+.absent {
+  background: #000;
+  color: #fff;
+}
+
+.pending {
+  color: var(--color-muted);
+}
+
+.excusedAbsent {
+  background: #009B91;
+  color: #fff;
+}
+
+.excusedLate {
+  background: #D9E5EC;
+  color: #000;
+}
+
+.lateUnexcused {
+  background: #000;
+  color: #fff;
+}
+
+.pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.pillPending {
+  color: var(--color-muted);
+}
+
+.pillOk {
+  background: #009B91;
+  color: #fff;
+}
+
+.pillBad {
+  background: #c0392b;
+  color: #fff;
+}

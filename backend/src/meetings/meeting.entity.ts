@@ -20,7 +20,7 @@ export class Meeting {
   @Column({ type: 'int', default: 60 })
   checkinWindowMinutes: number;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: true })
   liveCheckinOpen: boolean;
 
   @Column({ type: 'boolean', default: false })

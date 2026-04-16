@@ -33,8 +33,8 @@ export class AttendanceService {
     private readonly usersService: UsersService,
   ) {}
 
-  computeInfractions(record: UserMeeting, capInfractions: boolean): number {
-    return computeInfractions(record, capInfractions);
+  computeInfractions(record: UserMeeting, meeting: Meeting): number {
+    return computeInfractions({ ...record, liveCheckinDeadline: new Date(new Date(meeting.date).getTime() + meeting.checkinWindowMinutes * 60_000), checkinDeadline: new Date(meeting.checkinDeadline) }, meeting.capInfractions);
   }
 
   private toRecord(user: User, um: UserMeeting, infractions: number | null): AttendanceRecord {
@@ -102,7 +102,7 @@ export class AttendanceService {
         attendanceType: null,
         answerCorrect: null,
         infractions: computeInfractions(
-          { isLate: null, liveCheckedInAt: null, postCheckedInAt: null, excuseType: null },
+          { isLate: null, liveCheckedInAt: null, postCheckedInAt: null, excuseType: null, liveCheckinDeadline: new Date(new Date(meeting.date).getTime() + meeting.checkinWindowMinutes * 60_000), checkinDeadline: new Date(meeting.checkinDeadline) },
           meeting.capInfractions,
         ),
       });
@@ -142,7 +142,7 @@ export class AttendanceService {
     }
 
     Object.assign(record, dto);
-    record.infractions = computeInfractions(record, meeting.capInfractions);
+    record.infractions = computeInfractions({ ...record, liveCheckinDeadline: new Date(new Date(meeting.date).getTime() + meeting.checkinWindowMinutes * 60_000), checkinDeadline: new Date(meeting.checkinDeadline) }, meeting.capInfractions);
     await this.userMeetings.save(record);
 
     return this.toRecord(user, record, record.infractions);

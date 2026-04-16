@@ -12,17 +12,25 @@
   flex-wrap: wrap;
 }
 
-.exportButtons {
-  display: flex;
-  gap: var(--spacing-xs);
-}
-
 .legend {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--spacing-sm);
   font-size: var(--text-xs);
   color: var(--color-muted);
+}
+
+.legendGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.exportButtons {
+  display: flex;
+  gap: var(--spacing-xs);
 }
 
 .exportButton {
