@@ -57,7 +57,7 @@ export function Overview() {
     ])
       .then(([stats, meetings]) => {
         setData(stats);
-        setMeetingIdByDate(Object.fromEntries(meetings.map(m => [m.date, m.id])));
+        setMeetingIdByDate(Object.fromEntries(meetings.map((m: { date: string; id: string }) => [m.date, m.id])));
       })
       .catch(() => setError('Fehler beim Laden der Statistiken.'))
       .finally(() => setLoading(false));
