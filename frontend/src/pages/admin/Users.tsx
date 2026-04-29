@@ -70,7 +70,7 @@ export function AdminUsers() {
                 {user.stats.totalMeetings} Meetings
                 · {user.stats.absent} fehlend
                 · {user.stats.late} verspätet
-                · <strong>{user.stats.infractions} Kasten</strong>
+                · <strong>{user.stats.infractions} Strafstriche</strong>
               </span>
             </div>
             <div className={styles.actions}>

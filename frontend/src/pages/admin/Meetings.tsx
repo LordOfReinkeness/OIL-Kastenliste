@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { MeetingsService, AttendanceService } from '../../api';
-import { StatusBadge } from '../../components/ui/StatusBadge';
+import { MeetingCell } from '../../components/ui/MeetingCell';
+import { MeetingLegend } from '../../components/ui/MeetingLegend';
 import { EditMeetingPopup } from '../../components/popup/EditMeetingPopup';
 import { ConfirmPopup } from '../../components/popup/ConfirmPopup';
 import styles from './Meetings.module.css';
@@ -26,11 +27,12 @@ interface AttendanceRecord {
   firstName: string;
   lastName: string;
   rzId: string;
-  infraction: 'none' | 'late' | 'absent' | 'pending';
-  attendanceType: 'in_person' | 'remote' | null;
-  checkedInAt: string | null;
-  excusedAt: string | null;
+  liveCheckedInAt: string | null;
+  postCheckedInAt: string | null;
+  isLate: boolean | null;
   excuseType: 'late' | 'absent' | null;
+  attendanceType: 'in_person' | 'remote' | null;
+  infractions: number | null;
 }
 
 function formatDate(dateStr: string) {
@@ -111,9 +113,9 @@ function MeetingRow({ meeting, onEdited, onDeleted }: { meeting: Meeting; onEdit
     }
   }
 
-  const presentCount  = attendance?.filter(a => a.infraction === 'none' && a.checkedInAt).length ?? 0;
-  const excusedCount  = attendance?.filter(a => a.infraction === 'none' && !a.checkedInAt).length ?? 0;
-  const absentCount   = attendance?.filter(a => a.infraction === 'absent').length ?? 0;
+  const presentCount  = attendance?.filter(a => a.liveCheckedInAt !== null).length ?? 0;
+  const excusedCount  = attendance?.filter(a => a.excuseType === 'absent').length ?? 0;
+  const absentCount   = attendance?.filter(a => a.liveCheckedInAt === null && !a.excuseType && a.infractions !== null).length ?? 0;
 
   return (
     <>
@@ -172,27 +174,28 @@ function MeetingRow({ meeting, onEdited, onDeleted }: { meeting: Meeting; onEdit
               <table className={styles.attTable}>
                 <thead>
                   <tr>
-                    <th className={styles.attTh}>Name</th>
-                    <th className={styles.attTh}>Status</th>
-                    <th className={styles.attTh}>Teilnahme</th>
-                    <th className={styles.attTh}>Entschuldigung</th>
+                    <th className={`${styles.attTh} ${styles.attNameCol}`}>Name</th>
+                    <th className={`${styles.attTh} ${styles.attCellCol}`}>Anwesenheit</th>
                   </tr>
                 </thead>
                 <tbody>
                   {attendance.map(a => (
                     <tr key={a.userId} className={styles.attRow}>
-                      <td className={styles.attTd}>
+                      <td className={`${styles.attTd} ${styles.attNameCol}`}>
                         <span className={styles.attName}>{a.lastName}, {a.firstName}</span>
                         <span className={styles.attRzId}>{a.rzId}</span>
                       </td>
-                      <td className={styles.attTd}>
-                        <StatusBadge infraction={a.infraction} />
-                      </td>
-                      <td className={styles.attTd}>
-                        {a.attendanceType === 'in_person' ? 'Vor Ort' : a.attendanceType === 'remote' ? 'Online' : '—'}
-                      </td>
-                      <td className={styles.attTd}>
-                        {a.excuseType === 'absent' ? 'Abwesend' : a.excuseType === 'late' ? 'Verspätet' : '—'}
+                      <td className={`${styles.attTd} ${styles.attCellCol}`}>
+                        <div className={styles.attCellCenter}>
+                          <MeetingCell
+                            liveCheckedIn={a.liveCheckedInAt !== null ? true : (a.infractions !== null ? false : null)}
+                            postCheckedIn={a.postCheckedInAt !== null ? true : (a.infractions !== null ? false : null)}
+                            isLate={a.isLate}
+                            excuseType={a.excuseType}
+                            infractions={a.infractions}
+                            layout="expanded"
+                          />
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -248,6 +251,8 @@ export function AdminMeetings() {
 
   return (
     <div className={styles.page}>
+      <MeetingLegend defaultOpen={false} />
+
       {future.length > 0 && (
         <section>
           <h2 className={styles.sectionTitle}>Bevorstehend</h2>

@@ -164,7 +164,7 @@ export function EditMeetingPopup({ meetingId, onClose, onSaved }: EditMeetingPop
             <input id="capInfractions" type="checkbox"
               checked={capInfractions} onChange={e => setCapInfractions(e.target.checked)}
               disabled={submitting} />
-            <label htmlFor="capInfractions" className={styles.checkLabel}>Kasten auf 1 begrenzen</label>
+            <label htmlFor="capInfractions" className={styles.checkLabel}>Strafstriche auf 1 begrenzen</label>
           </div>
 
           <div className={styles.checkRow}>

@@ -16,34 +16,101 @@
   color: var(--color-muted);
 }
 
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.segmented {
+  display: flex;
+}
+
+.segment {
+  flex: 1;
+  padding: 10px var(--spacing-sm);
+  font-size: var(--text-sm);
+  font-family: var(--font-family);
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-text);
+}
+
+.segment + .segment {
+  border-left: none;
+}
+
+.segment.active {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.segment:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.infractionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-surface);
+}
+
+.infractionValue {
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.error {
+  font-size: var(--text-xs);
+  margin: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-surface);
+  border-left: 4px solid var(--color-text);
+}
+
 .actions {
   display: flex;
   gap: var(--spacing-sm);
 }
 
-.buttonLate {
+.buttonSecondary {
   flex: 1;
   padding: 14px var(--spacing-md);
   font-size: var(--text-sm);
   font-weight: 600;
   font-family: var(--font-family);
-  background: var(--color-surface);
+  background: transparent;
   color: var(--color-text);
   border: 1px solid var(--color-text);
   cursor: pointer;
 }
 
-.buttonLate:hover:not(:disabled) {
-  background: var(--color-text);
-  color: var(--color-bg);
+.buttonSecondary:hover:not(:disabled) {
+  background: var(--color-surface);
 }
 
-.buttonLate:disabled {
+.buttonSecondary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.buttonAbsent {
+.buttonPrimary {
   flex: 1;
   padding: 14px var(--spacing-md);
   font-size: var(--text-sm);
@@ -55,19 +122,11 @@
   cursor: pointer;
 }
 
-.buttonAbsent:hover:not(:disabled) {
+.buttonPrimary:hover:not(:disabled) {
   opacity: 0.85;
 }
 
-.buttonAbsent:disabled {
+.buttonPrimary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.error {
-  font-size: var(--text-xs);
-  margin: 0;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background: var(--color-surface);
-  border-left: 4px solid var(--color-text);
 }

@@ -219,6 +219,21 @@
   white-space: nowrap;
 }
 
+.attNameCol {
+  width: 1px;
+  white-space: nowrap;
+}
+
+.attCellCol {
+  width: 100%;
+  padding: 2px var(--spacing-sm) !important;
+}
+
+.attCellCenter {
+  display: flex;
+  justify-content: center;
+}
+
 .attRow:nth-child(even) {
   background: #fafafa;
 }

@@ -4,13 +4,18 @@ import { TokenEntryPopup } from '../components/popup/TokenEntryPopup';
 import { ExcusePopup } from '../components/popup/ExcusePopup';
 import { useUserSession } from '../hooks/useUserSession';
 import { UsersService } from '../api';
+import { UserMeetingHistory } from '../components/ui/UserMeetingHistory';
 import styles from './Home.module.css';
 
+interface MeetingEntry {
+  id: string;
+  date: string;
+  infractions: number | null;
+}
+
 interface UserStats {
-  totalMeetings: number;
-  absent: number;
-  late: number;
-  infractions: number;
+  totalInfractions: number;
+  meetings: MeetingEntry[];
 }
 
 export function Home() {
@@ -37,15 +42,6 @@ export function Home() {
       <div className={styles.content}>
         {user && <p className={styles.greeting}>Hallo, {user.firstName}</p>}
 
-        {stats && (
-          <p className={styles.stats}>
-            {stats.totalMeetings} Meetings
-            · {stats.absent} fehlend
-            · {stats.late} verspätet
-            · <strong>{stats.infractions} Kasten</strong>
-          </p>
-        )}
-
         <div className={styles.actions}>
           <button
             className={styles.actionButton}
@@ -64,6 +60,13 @@ export function Home() {
 
         {excuseSuccess && (
           <p className={styles.successMessage}>Entschuldigung wurde eingereicht.</p>
+        )}
+
+        {stats && (
+          <UserMeetingHistory
+            meetings={stats.meetings}
+            totalInfractions={stats.totalInfractions}
+          />
         )}
       </div>
 

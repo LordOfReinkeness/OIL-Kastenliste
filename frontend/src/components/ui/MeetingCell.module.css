@@ -73,3 +73,30 @@
   background: #c0392b;
   color: #fff;
 }
+
+/* Expanded layout */
+.cellExpanded {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 6px 0;
+}
+
+.badgesExpanded {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.badgeExpanded {
+  font-size: 13px;
+  padding: 5px 12px;
+  border-radius: 3px;
+}
+
+.pillExpanded {
+  font-size: 13px;
+  padding: 5px 14px;
+  border-radius: 12px;
+  min-width: auto;
+}

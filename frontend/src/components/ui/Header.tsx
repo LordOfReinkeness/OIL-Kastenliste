@@ -12,7 +12,7 @@ export function Header() {
           alt="OIL Logo"
           className={styles.logo}
         />
-        <span className={styles.title}>Kastenliste</span>
+        <span className={styles.title}>Strafstriche</span>
         {user && (
           <button className={styles.logout} onClick={clearUser}>
             Abmelden

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { AdminStatsService } from '../../api';
-import { MeetingCell, MeetingBadge } from '../../components/ui/MeetingCell';
+import { MeetingCell } from '../../components/ui/MeetingCell';
+import { MeetingLegend } from '../../components/ui/MeetingLegend';
 import { EditAttendancePopup } from '../../components/popup/EditAttendancePopup';
 import styles from './Overview.module.css';
 
@@ -34,6 +35,7 @@ interface EditTarget {
   meetingDate: string;
   userId: string;
   userName: string;
+  current: MeetingStat | null;
 }
 
 function shortDate(dateStr: string) {
@@ -74,32 +76,7 @@ export function Overview() {
   return (
     <div className={styles.page}>
       <div className={styles.toolbar}>
-        <div className={styles.legend}>
-          <span className={styles.legendGroup}>
-            <MeetingBadge type="present" label="L ✓" /> Live anwesend
-          </span>
-          <span className={styles.legendGroup}>
-            <MeetingBadge type="absent" label="L ✗" /> Live abwesend
-          </span>
-          <span className={styles.legendGroup}>
-            <MeetingBadge type="present" label="P ✓" /> Post-Checkin ok
-          </span>
-          <span className={styles.legendGroup}>
-            <MeetingBadge type="absent" label="P ✗" /> Post-Checkin fehlt
-          </span>
-          <span className={styles.legendGroup}>
-            <MeetingBadge type="excusedAbsent" label="E: abwesend" /> entschuldigt abwesend
-          </span>
-          <span className={styles.legendGroup}>
-            <MeetingBadge type="excusedLate" label="E: verspätet" /> entschuldigt verspätet
-          </span>
-          <span className={styles.legendGroup}>
-            <MeetingBadge type="lateUnexcused" label="! verspätet" /> unentschuldigt verspätet
-          </span>
-          <span className={styles.legendGroup}>
-            <MeetingBadge type="pillBad" label="2" /> Kasten
-          </span>
-        </div>
+        <MeetingLegend />
         <div className={styles.exportButtons}>
           <button className={styles.exportButton} onClick={handleExport}>
             Export CSV
@@ -123,7 +100,7 @@ export function Overview() {
               <th className={`${styles.th} ${styles.summaryCol}`}>Abwesend</th>
               <th className={`${styles.th} ${styles.summaryCol}`}>Verspätet</th>
               <th className={`${styles.th} ${styles.summaryCol}`}>Entschuldigt</th>
-              <th className={`${styles.th} ${styles.summaryCol} ${styles.kastenliste}`}>Kasten</th>
+              <th className={`${styles.th} ${styles.summaryCol} ${styles.kastenliste}`}>Strafstriche</th>
             </tr>
           </thead>
           <tbody>
@@ -149,6 +126,7 @@ export function Overview() {
                             meetingDate: m.date,
                             userId: user.id,
                             userName: `${user.lastName}, ${user.firstName}`,
+                            current: stat ?? null,
                           })}
                         >
                           <MeetingCell
@@ -179,6 +157,7 @@ export function Overview() {
           meetingDate={editTarget.meetingDate}
           userId={editTarget.userId}
           userName={editTarget.userName}
+          current={editTarget.current}
           onClose={() => setEditTarget(null)}
           onSaved={() => { setEditTarget(null); load(); }}
         />

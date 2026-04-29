@@ -11,42 +11,50 @@ interface MeetingCellProps {
   isLate: boolean | null;
   excuseType: 'late' | 'absent' | null;
   infractions: number | null;
+  layout?: 'compact' | 'expanded';
 }
 
-export function MeetingCell({ liveCheckedIn, postCheckedIn, isLate, excuseType, infractions }: MeetingCellProps) {
-  const isExcusedAbsent = excuseType === 'absent';
-  const isExcusedLate   = excuseType === 'late';
-  const isLateUnexcused = isLate && !excuseType;
+export function MeetingCell({ liveCheckedIn, postCheckedIn, isLate, excuseType, infractions, layout = 'compact' }: MeetingCellProps) {
+  const exp = layout === 'expanded';
+  const isExcusedAbsent  = excuseType === 'absent';
+  const isExcusedLate    = excuseType === 'late';
+  const isLateUnexcused  = isLate && !excuseType;
+
+  const badgeCls = (type: string) =>
+    [styles.badge, styles[type], exp ? styles.badgeExpanded : ''].join(' ');
 
   const excuseBadge = isExcusedAbsent ? (
-    <span className={`${styles.badge} ${styles.excusedAbsent}`}>E: abwesend</span>
+    <span className={badgeCls('excusedAbsent')}>{exp ? 'Entschuldigt: abwesend' : 'E: abwesend'}</span>
   ) : isExcusedLate ? (
-    <span className={`${styles.badge} ${styles.excusedLate}`}>E: verspätet</span>
+    <span className={badgeCls('excusedLate')}>{exp ? 'Entschuldigt: verspätet' : 'E: verspätet'}</span>
   ) : isLateUnexcused ? (
-    <span className={`${styles.badge} ${styles.lateUnexcused}`}>! verspätet</span>
+    <span className={badgeCls('lateUnexcused')}>{exp ? 'Unentschuldigt verspätet' : '! verspätet'}</span>
   ) : null;
 
   const liveBadge = !isExcusedAbsent ? (
-    liveCheckedIn === true  ? <span className={`${styles.badge} ${styles.present}`}>L ✓</span> :
-    liveCheckedIn === false ? <span className={`${styles.badge} ${styles.absent}`}>L ✗</span> :
-                              <span className={`${styles.badge} ${styles.pending}`}>L —</span>
+    liveCheckedIn === true  ? <span className={badgeCls('present')}>{exp ? 'Anwesend' : 'A ✓'}</span> :
+    liveCheckedIn === false ? <span className={badgeCls('absent')}>{exp ? 'Abwesend' : 'A ✗'}</span> :
+                              <span className={badgeCls('pending')}>{exp ? 'Ausstehend' : 'A —'}</span>
   ) : null;
 
   const postBadge = liveCheckedIn !== true ? (
-    postCheckedIn === true  ? <span className={`${styles.badge} ${styles.present}`}>P ✓</span> :
-    postCheckedIn === false ? <span className={`${styles.badge} ${styles.absent}`}>P ✗</span> :
-                              <span className={`${styles.badge} ${styles.pending}`}>P —</span>
+    postCheckedIn === true  ? <span className={badgeCls('present')}>{exp ? 'Nachcheck-in ✓' : 'N ✓'}</span> :
+    postCheckedIn === false ? <span className={badgeCls('absent')}>{exp ? 'Nachcheck-in fehlt' : 'N ✗'}</span> :
+                              <span className={badgeCls('pending')}>{exp ? 'Nachcheck-in ausstehend' : 'N —'}</span>
   ) : null;
 
+  const pillCls = (type: string) =>
+    [styles.pill, styles[type], exp ? styles.pillExpanded : ''].join(' ');
+
   const pill = infractions === null
-    ? <span className={`${styles.pill} ${styles.pillPending}`}>—</span>
+    ? <span className={pillCls('pillPending')}>{exp ? '— Strafstriche' : '—'}</span>
     : infractions === 0
-    ? <span className={`${styles.pill} ${styles.pillOk}`}>0</span>
-    : <span className={`${styles.pill} ${styles.pillBad}`}>{infractions}</span>;
+    ? <span className={pillCls('pillOk')}>{exp ? '0 Strafstriche' : '0'}</span>
+    : <span className={pillCls('pillBad')}>{exp ? `${infractions} Strafstriche` : infractions}</span>;
 
   return (
-    <div className={styles.cell}>
-      <div className={styles.badges}>
+    <div className={`${styles.cell} ${exp ? styles.cellExpanded : ''}`}>
+      <div className={`${styles.badges} ${exp ? styles.badgesExpanded : ''}`}>
         {excuseBadge}
         {liveBadge}
         {postBadge}
