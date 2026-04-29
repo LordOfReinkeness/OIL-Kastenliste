@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Popup } from './Popup';
-import { MeetingsService, TokenService, ApiError, ExcuseDto } from '../../api';
+import { MeetingsService, ApiError, ExcuseDto } from '../../api';
 import { useUserSession } from '../../hooks/useUserSession';
 import styles from './ExcusePopup.module.css';
 
@@ -48,7 +48,7 @@ export function ExcusePopup({ onClose, onSuccess }: ExcusePopupProps) {
     setSubmitting(true);
     setError('');
     try {
-      await TokenService.tokenControllerSubmitExcuse(meeting.linkToken, {
+      await MeetingsService.meetingsControllerExcuseNextMeeting({
         rzId: user.rzId,
         excuseType: excuseType as ExcuseDto.excuseType,
       });

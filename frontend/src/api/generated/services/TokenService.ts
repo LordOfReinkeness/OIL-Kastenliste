@@ -2,7 +2,6 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ExcuseDto } from '../models/ExcuseDto';
 import type { LiveCheckinDto } from '../models/LiveCheckinDto';
 import type { PostCheckinDto } from '../models/PostCheckinDto';
 import type { CancelablePromise } from '../core/CancelablePromise';
@@ -78,32 +77,6 @@ export class TokenService {
                 403: `Deadline passed or max retries reached`,
                 404: `User or meeting not found`,
                 409: `Already checked in or already checked in live`,
-            },
-        });
-    }
-    /**
-     * Submit an excuse before the deadline
-     * @param token
-     * @param requestBody
-     * @returns any Excuse submitted
-     * @throws ApiError
-     */
-    public static tokenControllerSubmitExcuse(
-        token: string,
-        requestBody: ExcuseDto,
-    ): CancelablePromise<any> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/meetings/t/{token}/excuse',
-            path: {
-                'token': token,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-            errors: {
-                403: `Excuse deadline passed`,
-                404: `User or meeting not found`,
-                409: `Already submitted`,
             },
         });
     }

@@ -77,7 +77,6 @@ export class UsersService {
       if (r) {
         totalInfractions += r.infractions;
         return {
-          id: meeting.id,
           date: meeting.date,
           excuseType: r.excuseType,
           liveCheckedIn: !!r.liveCheckedInAt,
@@ -90,7 +89,6 @@ export class UsersService {
 
       if (!isPastDeadline) {
         return {
-          id: meeting.id,
           date: meeting.date,
           excuseType: null,
           liveCheckedIn: false,
@@ -107,7 +105,6 @@ export class UsersService {
       );
       totalInfractions += resolved;
       return {
-        id: meeting.id,
         date: meeting.date,
         excuseType: null,
         liveCheckedIn: false,

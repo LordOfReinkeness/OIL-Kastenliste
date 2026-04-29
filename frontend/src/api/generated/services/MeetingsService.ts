@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { CreateMeetingDto } from '../models/CreateMeetingDto';
+import type { ExcuseDto } from '../models/ExcuseDto';
 import type { UpdateMeetingDto } from '../models/UpdateMeetingDto';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -46,6 +47,25 @@ export class MeetingsService {
             url: '/api/meetings/next',
             errors: {
                 404: `No upcoming meeting`,
+            },
+        });
+    }
+    /**
+     * Submit an excuse for the next upcoming meeting
+     * @param requestBody
+     * @returns any Excuse submitted
+     * @throws ApiError
+     */
+    public static meetingsControllerExcuseNextMeeting(
+        requestBody: ExcuseDto,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/meetings/next/excuse',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                404: `No upcoming meeting or user not found`,
             },
         });
     }

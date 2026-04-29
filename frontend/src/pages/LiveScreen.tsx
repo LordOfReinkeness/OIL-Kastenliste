@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { TokenService } from '../api';
+import { TokenService, MeetingsService } from '../api';
 import styles from './LiveScreen.module.css';
 
 export function LiveScreen() {
@@ -11,16 +11,38 @@ export function LiveScreen() {
 
   const url = `${window.location.origin}/live-checkin/${token}`;
 
-  function load() {
+  useEffect(() => {
     TokenService.tokenControllerGetMeeting(token!)
-      .then(m => {
-        setMeeting(m);
-        setLiveOpen(m.liveCheckinOpen ?? false);
-      })
+      .then(m => setMeeting(m))
       .catch(() => {});
-  }
+  }, [token]);
 
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => {
+    if (!meeting?.id) return;
+
+    MeetingsService.meetingsControllerUpdate(meeting.id, { liveCheckinOpen: true })
+      .then(() => setLiveOpen(true))
+      .catch(() => {});
+
+    const handleBeforeUnload = () => {
+      fetch(`/api/meetings/${meeting.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ liveCheckinOpen: false }),
+        keepalive: true,
+      });
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [meeting?.id]);
+
+  async function toggleLive() {
+    if (!meeting?.id) return;
+    const next = !liveOpen;
+    await MeetingsService.meetingsControllerUpdate(meeting.id, { liveCheckinOpen: next });
+    setLiveOpen(next);
+  }
 
   const dateStr = meeting
     ? new Date(meeting.date).toLocaleDateString('de-DE', {
@@ -32,9 +54,13 @@ export function LiveScreen() {
     <div className={styles.page}>
       <div className={styles.header}>
         <span className={styles.title}>Live Check-in</span>
-        <span className={`${styles.status} ${liveOpen ? styles.statusOpen : styles.statusClosed}`}>
+        <button
+          className={`${styles.status} ${liveOpen ? styles.statusOpen : styles.statusClosed}`}
+          onClick={toggleLive}
+          disabled={!meeting?.id}
+        >
           {liveOpen ? 'Geöffnet' : 'Geschlossen'}
-        </span>
+        </button>
       </div>
 
       <div className={styles.body}>
@@ -47,6 +73,13 @@ export function LiveScreen() {
         <p className={styles.token}>{token}</p>
         <p className={styles.urlHint}>{url}</p>
 
+        <button
+          className={liveOpen ? styles.buttonClose : styles.buttonOpen}
+          onClick={toggleLive}
+          disabled={!meeting?.id}
+        >
+          {liveOpen ? 'Check-in schließen' : 'Check-in öffnen'}
+        </button>
       </div>
     </div>
   );

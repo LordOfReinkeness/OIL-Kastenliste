@@ -249,33 +249,6 @@ paths:
       summary: Post-meeting check-in before closing deadline
       tags:
         - Token
-  /api/meetings/t/{token}/excuse:
-    post:
-      operationId: TokenController_submitExcuse
-      parameters:
-        - name: token
-          required: true
-          in: path
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ExcuseDto'
-      responses:
-        '200':
-          description: Excuse submitted
-        '403':
-          description: Excuse deadline passed
-        '404':
-          description: User or meeting not found
-        '409':
-          description: Already submitted
-      summary: Submit an excuse before the deadline
-      tags:
-        - Token
   /api/meetings/{id}/attendance:
     get:
       operationId: AttendanceController_getAttendance
@@ -356,6 +329,24 @@ paths:
         '404':
           description: No upcoming meeting
       summary: Get next upcoming meeting
+      tags:
+        - Meetings
+  /api/meetings/next/excuse:
+    post:
+      operationId: MeetingsController_excuseNextMeeting
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExcuseDto'
+      responses:
+        '200':
+          description: Excuse submitted
+        '404':
+          description: No upcoming meeting or user not found
+      summary: Submit an excuse for the next upcoming meeting
       tags:
         - Meetings
   /api/meetings/{id}:
@@ -512,21 +503,6 @@ components:
           example: deployment pipeline
       required:
         - rzId
-    ExcuseDto:
-      type: object
-      properties:
-        rzId:
-          type: string
-          example: lu451rei
-        excuseType:
-          type: string
-          enum:
-            - late
-            - absent
-          example: absent
-      required:
-        - rzId
-        - excuseType
     UpdateAttendanceDto:
       type: object
       properties:
@@ -601,6 +577,21 @@ components:
         - date
         - excuseDeadlineMinutes
         - checkinDeadline
+    ExcuseDto:
+      type: object
+      properties:
+        rzId:
+          type: string
+          example: lu451rei
+        excuseType:
+          type: string
+          enum:
+            - late
+            - absent
+          example: absent
+      required:
+        - rzId
+        - excuseType
     UpdateMeetingDto:
       type: object
       properties:

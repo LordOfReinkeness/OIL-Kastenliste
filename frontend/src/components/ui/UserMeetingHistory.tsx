@@ -2,7 +2,6 @@ import { useState } from 'react';
 import styles from './UserMeetingHistory.module.css';
 
 interface MeetingEntry {
-  id: string;
   date: string;
   infractions: number | null;
 }
@@ -23,7 +22,7 @@ export function UserMeetingHistory({ meetings, totalInfractions, defaultOpen = f
   const [open, setOpen] = useState(defaultOpen);
 
   const sorted = [...meetings].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
   return (
@@ -44,7 +43,7 @@ export function UserMeetingHistory({ meetings, totalInfractions, defaultOpen = f
             {sorted.map(m => {
               const pending = m.infractions === null;
               return (
-                <tr key={m.id} className={styles.row}>
+                <tr key={m.date} className={styles.row}>
                   <td className={styles.dateCell}>{formatDate(m.date)}</td>
                   <td className={styles.valueCell}>
                     {pending ? (

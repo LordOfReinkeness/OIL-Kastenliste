@@ -244,34 +244,23 @@ export function AdminMeetings() {
   if (loading) return <p className={styles.muted}>Wird geladen…</p>;
 
   const now = new Date();
-  const future = meetings.filter(m => new Date(m.date) > now)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  const past = meetings.filter(m => new Date(m.date) <= now)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const sorted = [...meetings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const past   = sorted.filter(m => new Date(m.date) <= now);
+  const future = sorted.filter(m => new Date(m.date) > now);
 
   return (
     <div className={styles.page}>
       <MeetingLegend defaultOpen={false} />
 
-      {future.length > 0 && (
-        <section>
-          <h2 className={styles.sectionTitle}>Bevorstehend</h2>
-          {future.map(m => <MeetingRow key={m.id} meeting={m} onEdited={load} onDeleted={load} />)}
-        </section>
-      )}
+      {past.map(m => <MeetingRow key={m.id} meeting={m} onEdited={load} onDeleted={load} />)}
 
-      {future.length > 0 && past.length > 0 && (
+      {past.length > 0 && future.length > 0 && (
         <div className={styles.divider}>
-          <span className={styles.dividerLabel}>Vergangene Meetings</span>
+          <span className={styles.dividerLabel}>Bevorstehende Meetings</span>
         </div>
       )}
 
-      {past.length > 0 && (
-        <section>
-          {future.length === 0 && <h2 className={styles.sectionTitle}>Vergangene Meetings</h2>}
-          {past.map(m => <MeetingRow key={m.id} meeting={m} onEdited={load} onDeleted={load} />)}
-        </section>
-      )}
+      {future.map(m => <MeetingRow key={m.id} meeting={m} onEdited={load} onDeleted={load} />)}
 
       {!meetings.length && <p className={styles.muted}>Keine Meetings vorhanden.</p>}
     </div>

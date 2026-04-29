@@ -16,13 +16,17 @@ import {
 } from '@nestjs/swagger';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { UpdateMeetingDto } from './dto/update-meeting.dto';
-import { Meeting } from './meeting.entity';
 import { MeetingsService } from './meetings.service';
+import { TokenService } from './token/token.service';
+import { ExcuseDto } from './token/dto/excuse.dto';
 import { Public } from '../auth/public.decorator';
 
 @Controller('meetings')
 class MeetingsController {
-  constructor(private readonly meetingsService: MeetingsService) {}
+  constructor(
+    private readonly meetingsService: MeetingsService,
+    private readonly tokenService: TokenService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new meeting' })
@@ -44,8 +48,21 @@ class MeetingsController {
   @ApiOperation({ summary: 'Get next upcoming meeting' })
   @ApiOkResponse({ description: 'Next meeting' })
   @ApiNotFoundResponse({ description: 'No upcoming meeting' })
-  async findNext(): Promise<Meeting> {
-    return this.meetingsService.findNext();
+  async findNext() {
+    const { id: _, linkToken: __, ...meeting } = await this.meetingsService.findNext();
+    return meeting;
+  }
+
+  // must be before /:id to avoid routing conflict
+  @Post('next/excuse')
+  @Public()
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Submit an excuse for the next upcoming meeting' })
+  @ApiOkResponse({ description: 'Excuse submitted' })
+  @ApiNotFoundResponse({ description: 'No upcoming meeting or user not found' })
+  async excuseNextMeeting(@Body() dto: ExcuseDto) {
+    const meeting = await this.meetingsService.findNext();
+    return this.tokenService.submitExcuseForMeeting(meeting, dto);
   }
 
   @Get(':id')

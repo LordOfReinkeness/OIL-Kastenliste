@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { AdminStatsService } from '../../api';
+import { AdminStatsService, MeetingsService } from '../../api';
 import { MeetingCell } from '../../components/ui/MeetingCell';
 import { MeetingLegend } from '../../components/ui/MeetingLegend';
 import { EditAttendancePopup } from '../../components/popup/EditAttendancePopup';
 import styles from './Overview.module.css';
 
 interface MeetingStat {
-  id: string;
   date: string;
   liveCheckedIn: boolean | null;
   postCheckedIn: boolean | null;
@@ -45,14 +44,21 @@ function shortDate(dateStr: string) {
 export function Overview() {
   const { refreshKey } = useOutletContext<{ refreshKey: number }>();
   const [data, setData] = useState<UserStats[]>([]);
+  const [meetingIdByDate, setMeetingIdByDate] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
 
   function load() {
     setLoading(true);
-    AdminStatsService.adminStatsControllerGetStats()
-      .then(setData)
+    Promise.all([
+      AdminStatsService.adminStatsControllerGetStats(),
+      MeetingsService.meetingsControllerFindAll(),
+    ])
+      .then(([stats, meetings]) => {
+        setData(stats);
+        setMeetingIdByDate(Object.fromEntries(meetings.map(m => [m.date, m.id])));
+      })
       .catch(() => setError('Fehler beim Laden der Statistiken.'))
       .finally(() => setLoading(false));
   }
@@ -93,7 +99,7 @@ export function Overview() {
             <tr>
               <th className={`${styles.th} ${styles.nameCol}`}>Name</th>
               {meetings.map(m => (
-                <th key={m.id} className={`${styles.th} ${styles.meetingCol}`}>
+                <th key={m.date} className={`${styles.th} ${styles.meetingCol}`}>
                   {shortDate(m.date)}
                 </th>
               ))}
@@ -105,8 +111,8 @@ export function Overview() {
           </thead>
           <tbody>
             {users.map(user => {
-              const byMeetingId = Object.fromEntries(
-                user.meetings.map(m => [m.id, m])
+              const byMeetingDate = Object.fromEntries(
+                user.meetings.map(m => [m.date, m])
               );
               const excusedCount = user.meetings.filter(m => m.excuseType === 'absent').length;
               return (
@@ -116,13 +122,14 @@ export function Overview() {
                     <span className={styles.rzId}>{user.rzId}</span>
                   </td>
                   {meetings.map(m => {
-                    const stat = byMeetingId[m.id];
+                    const stat = byMeetingDate[m.date];
+                    const meetingId = meetingIdByDate[m.date];
                     return (
-                      <td key={m.id} className={`${styles.td} ${styles.meetingCol}`}>
+                      <td key={m.date} className={`${styles.td} ${styles.meetingCol}`}>
                         <button
                           className={styles.cellButton}
                           onClick={() => setEditTarget({
-                            meetingId: m.id,
+                            meetingId,
                             meetingDate: m.date,
                             userId: user.id,
                             userName: `${user.lastName}, ${user.firstName}`,
