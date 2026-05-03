@@ -156,6 +156,8 @@ export function Overview() {
         </table>
       </div>
 
+      <p className={styles.summaryLine}>{users.length} Mitglieder · {meetings.length} Meetings</p>
+
       {editTarget && (
         <EditAttendancePopup
           meetingId={editTarget.meetingId}

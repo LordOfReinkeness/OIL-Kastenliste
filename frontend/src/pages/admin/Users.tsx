@@ -85,6 +85,8 @@ export function AdminUsers() {
         ))}
       </ul>
 
+      <p className={styles.summaryLine}>{users.length} Benutzer</p>
+
       {editUser && (
         <EditUserPopup
           user={editUser}

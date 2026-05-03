@@ -253,6 +253,8 @@ export function AdminMeetings() {
       {future.map(m => <MeetingRow key={m.id} meeting={m} onEdited={load} onDeleted={load} />)}
 
       {!meetings.length && <p className={styles.muted}>Keine Meetings vorhanden.</p>}
+
+      <p className={styles.summaryLine}>{meetings.length} Meetings · {past.length} vergangen · {future.length} bevorstehend</p>
     </div>
   );
 }
