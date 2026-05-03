@@ -5,12 +5,12 @@
 }
 
 .topBar {
-  height: 64px;
   border-bottom: 1px solid var(--color-text);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  gap: 6px;
   flex-shrink: 0;
 }
 
@@ -53,10 +53,44 @@
   border-color: var(--color-text);
 }
 
-.topBarTitle {
-  font-size: var(--text-h3);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+.topBarLogoGroup {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.topBarLogo {
+  height: 36px;
+  width: auto;
+  display: block;
+}
+
+.topBarSubtitle {
+  margin: 0;
+  font-size: 10px;
+  color: var(--color-muted);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+@media (min-width: 641px) {
+  .topBar {
+    position: relative;
+    height: 80px;
+    flex-direction: row;
+    justify-content: flex-end;
+    padding: 0 var(--spacing-md);
+  }
+
+  .topBarLogoGroup {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }
 
 .tabBar {

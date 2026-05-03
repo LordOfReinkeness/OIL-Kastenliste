@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { AdminStatsService, MeetingsService } from '../../api';
 import { MeetingCell } from '../../components/ui/MeetingCell';
 import { MeetingLegend } from '../../components/ui/MeetingLegend';
+import { formatDateShort } from '../../utils/date';
 import { EditAttendancePopup } from '../../components/popup/EditAttendancePopup';
 import styles from './Overview.module.css';
 
@@ -37,9 +38,6 @@ interface EditTarget {
   current: MeetingStat | null;
 }
 
-function shortDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-}
 
 export function Overview() {
   const { refreshKey } = useOutletContext<{ refreshKey: number }>();
@@ -100,7 +98,7 @@ export function Overview() {
               <th className={`${styles.th} ${styles.nameCol}`}>Name</th>
               {meetings.map(m => (
                 <th key={m.date} className={`${styles.th} ${styles.meetingCol}`}>
-                  {shortDate(m.date)}
+                  {formatDateShort(m.date)}
                 </th>
               ))}
               <th className={`${styles.th} ${styles.summaryCol}`}>Abwesend</th>

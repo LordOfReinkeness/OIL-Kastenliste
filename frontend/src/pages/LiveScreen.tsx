@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { TokenService, MeetingsService } from '../api';
+import { formatDateTimeLong } from '../utils/date';
 import styles from './LiveScreen.module.css';
 
 export function LiveScreen() {
@@ -44,11 +45,7 @@ export function LiveScreen() {
     setLiveOpen(next);
   }
 
-  const dateStr = meeting
-    ? new Date(meeting.date).toLocaleDateString('de-DE', {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-      }) + ', ' + new Date(meeting.date).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr'
-    : '…';
+  const dateStr = meeting ? formatDateTimeLong(meeting.date) : '…';
 
   return (
     <div className={styles.page}>

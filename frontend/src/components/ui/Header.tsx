@@ -7,12 +7,10 @@ export function Header() {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <img
-          src="/OIL_logo.png"
-          alt="OIL Logo"
-          className={styles.logo}
-        />
-        <span className={styles.title}>Strafstriche</span>
+        <div className={styles.logoGroup}>
+          <img src="/oil-stasi.svg" alt="OIL STASI" className={styles.logo} />
+          <p className={styles.subtitle}>Strichlisten-Tool zur Anwesenheits- und Sitzungs-Inspektion</p>
+        </div>
         {user && (
           <button className={styles.logout} onClick={clearUser}>
             Abmelden

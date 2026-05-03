@@ -19,6 +19,7 @@ import CreateUserDto from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
 import { Public } from '../auth/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('users')
 export class UsersController {
@@ -26,6 +27,7 @@ export class UsersController {
 
   @Post()
   @Public()
+  @Throttle({ write: {} })
   @ApiOperation({ summary: 'Create a new user' })
   @ApiCreatedResponse({ description: 'User created' })
   @ApiConflictResponse({ description: 'RZ ID already exists' })

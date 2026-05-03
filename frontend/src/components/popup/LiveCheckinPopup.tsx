@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Popup } from './Popup';
 import { TokenService, ApiError, LiveCheckinDto } from '../../api';
 import { useUserSession } from '../../hooks/useUserSession';
+import { formatDateTimeLong } from '../../utils/date';
 import styles from './CheckinPopup.module.css';
 
 type Step = 'loading' | 'form' | 'submitting' | 'success' | 'error';
@@ -72,7 +73,7 @@ export function LiveCheckinPopup({ token }: LiveCheckinPopupProps) {
           <div className={styles.meetingInfo}>
             <span className={styles.meetingLabel}>Meeting</span>
             <span className={styles.meetingDate}>
-              {new Date(meeting.date).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}, {new Date(meeting.date).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr
+              {formatDateTimeLong(meeting.date)}
             </span>
           </div>
 

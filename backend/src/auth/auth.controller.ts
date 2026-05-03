@@ -7,6 +7,7 @@ import {
   Req,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiOkResponse,
   ApiOperation,
@@ -23,6 +24,7 @@ export class AuthController {
 
   @Post('login')
   @Public()
+  @Throttle({ write: {} })
   @HttpCode(200)
   @ApiOperation({ summary: 'Admin login' })
   @ApiOkResponse({ description: 'Logged in' })

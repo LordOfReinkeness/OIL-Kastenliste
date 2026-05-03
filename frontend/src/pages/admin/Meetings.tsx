@@ -5,6 +5,7 @@ import { MeetingCell } from '../../components/ui/MeetingCell';
 import { MeetingLegend } from '../../components/ui/MeetingLegend';
 import { EditMeetingPopup } from '../../components/popup/EditMeetingPopup';
 import { ConfirmPopup } from '../../components/popup/ConfirmPopup';
+import { formatDateTime } from '../../utils/date';
 import styles from './Meetings.module.css';
 
 interface Meeting {
@@ -35,17 +36,6 @@ interface AttendanceRecord {
   infractions: number | null;
 }
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('de-DE', {
-    weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
-  }) + ', ' + new Date(dateStr).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr';
-}
-
-function formatDeadline(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('de-DE', {
-    day: 'numeric', month: 'long', year: 'numeric',
-  }) + ', ' + new Date(dateStr).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr';
-}
 
 function formatDuration(totalMinutes: number) {
   const days    = Math.floor(totalMinutes / 1440);
@@ -122,7 +112,7 @@ function MeetingRow({ meeting, onEdited, onDeleted }: { meeting: Meeting; onEdit
       <div className={`${styles.meetingCard} ${expanded ? styles.open : ''}`}>
         <div className={styles.meetingRowWrapper}>
           <button className={styles.meetingRow} onClick={handleExpand}>
-            <span className={styles.meetingDate}>{formatDate(meeting.date)}</span>
+            <span className={styles.meetingDate}>{formatDateTime(meeting.date)}</span>
             <span className={styles.indicators}>
               {meeting.question && <span className={styles.questionDot} title="Frage gesetzt" />}
               {attendance && (
@@ -153,7 +143,7 @@ function MeetingRow({ meeting, onEdited, onDeleted }: { meeting: Meeting; onEdit
               </div>
               <div className={styles.detailRow}>
                 <span className={styles.detailLabel}>Check-in Deadline</span>
-                <span className={styles.detailValue}>{formatDeadline(meeting.checkinDeadline)}</span>
+                <span className={styles.detailValue}>{formatDateTime(meeting.checkinDeadline)}</span>
               </div>
               <div className={styles.detailRow}>
                 <span className={styles.detailLabel}>Check-in</span>
@@ -216,7 +206,7 @@ function MeetingRow({ meeting, onEdited, onDeleted }: { meeting: Meeting; onEdit
       {confirmDelete && (
         <ConfirmPopup
           title="Meeting löschen"
-          message={`Meeting vom ${formatDate(meeting.date)} wirklich löschen?`}
+          message={`Meeting vom ${formatDateTime(meeting.date)} wirklich löschen?`}
           confirmLabel="Löschen"
           onConfirm={handleDelete}
           onClose={() => setConfirmDelete(false)}

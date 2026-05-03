@@ -22,7 +22,10 @@ export function AdminLayout() {
   return (
     <div className={styles.shell}>
       <header className={styles.topBar}>
-        <span className={styles.topBarTitle}>OIL Kastenliste: Admin</span>
+        <div className={styles.topBarLogoGroup}>
+          <img src="/oil-stasi.svg" alt="OIL STASI" className={styles.topBarLogo} />
+          <p className={styles.topBarSubtitle}>Strichlisten-Tool zur Anwesenheits- und Sitzungs-Inspektion</p>
+        </div>
         <div className={styles.topBarActions}>
           <button className={styles.newMeetingButton} onClick={() => setShowNewMeeting(true)}>
             + Neues Meeting

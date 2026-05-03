@@ -60,6 +60,59 @@
   color: var(--color-muted);
 }
 
+.dateTimeRow {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.inputTime {
+  border: 1px solid var(--color-border);
+  padding: 10px var(--spacing-sm);
+  font-size: var(--text-sm);
+  font-family: var(--font-family);
+  outline: none;
+  width: 120px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.inputTime:focus {
+  border-color: var(--color-text);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.sectionToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: none;
+  border: none;
+  border-top: 1px solid var(--color-border);
+  padding: var(--spacing-xs) 0;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  font-family: var(--font-family);
+  color: var(--color-text);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.sectionToggle:hover {
+  color: var(--color-muted);
+}
+
+.sectionChevron {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--color-muted);
+}
+
 .divider {
   border-top: 1px solid var(--color-border);
 }

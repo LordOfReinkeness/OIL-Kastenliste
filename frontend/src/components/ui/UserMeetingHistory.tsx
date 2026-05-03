@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDateMedium } from './../../utils/date';
 import styles from './UserMeetingHistory.module.css';
 
 interface MeetingEntry {
@@ -10,12 +11,6 @@ interface UserMeetingHistoryProps {
   meetings: MeetingEntry[];
   totalInfractions: number;
   defaultOpen?: boolean;
-}
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('de-DE', {
-    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
-  });
 }
 
 export function UserMeetingHistory({ meetings, totalInfractions, defaultOpen = false }: UserMeetingHistoryProps) {
@@ -44,7 +39,7 @@ export function UserMeetingHistory({ meetings, totalInfractions, defaultOpen = f
               const pending = m.infractions === null;
               return (
                 <tr key={m.date} className={styles.row}>
-                  <td className={styles.dateCell}>{formatDate(m.date)}</td>
+                  <td className={styles.dateCell}>{formatDateMedium(m.date)}</td>
                   <td className={styles.valueCell}>
                     {pending ? (
                       <span className={styles.pending}>Ausstehend</span>

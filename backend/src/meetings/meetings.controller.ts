@@ -20,6 +20,7 @@ import { MeetingsService } from './meetings.service';
 import { TokenService } from './token/token.service';
 import { ExcuseDto } from './token/dto/excuse.dto';
 import { Public } from '../auth/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('meetings')
 class MeetingsController {
@@ -56,6 +57,7 @@ class MeetingsController {
   // must be before /:id to avoid routing conflict
   @Post('next/excuse')
   @Public()
+  @Throttle({ write: {} })
   @HttpCode(200)
   @ApiOperation({ summary: 'Submit an excuse for the next upcoming meeting' })
   @ApiOkResponse({ description: 'Excuse submitted' })

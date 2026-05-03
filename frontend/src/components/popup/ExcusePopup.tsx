@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Popup } from './Popup';
 import { MeetingsService, ApiError, ExcuseDto } from '../../api';
 import { useUserSession } from '../../hooks/useUserSession';
+import { formatDateTimeLong } from '../../utils/date';
 import styles from './ExcusePopup.module.css';
 
 interface ExcusePopupProps {
@@ -10,19 +11,6 @@ interface ExcusePopupProps {
 }
 
 type ExcuseType = 'absent' | 'late';
-
-function formatMeetingDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('de-DE', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }) + ', ' + date.toLocaleTimeString('de-DE', {
-    hour: '2-digit',
-    minute: '2-digit',
-  }) + ' Uhr';
-}
 
 export function ExcusePopup({ onClose, onSuccess }: ExcusePopupProps) {
   const { user } = useUserSession();
@@ -79,7 +67,7 @@ export function ExcusePopup({ onClose, onSuccess }: ExcusePopupProps) {
         <>
           <div className={styles.meetingInfo}>
             <span className={styles.meetingLabel}>Nächstes Meeting</span>
-            <span className={styles.meetingDate}>{formatMeetingDate(meeting.date)}</span>
+            <span className={styles.meetingDate}>{formatDateTimeLong(meeting.date)}</span>
 
           </div>
 

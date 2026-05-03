@@ -1,4 +1,13 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Req,
+} from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiConflictResponse,
   ApiForbiddenResponse,
@@ -23,12 +32,17 @@ export class TokenController {
   @ApiOkResponse({ description: 'Meeting found' })
   @ApiNotFoundResponse({ description: 'Meeting not found' })
   async getMeeting(@Param('token') token: string, @Req() req: Request) {
-    const { answer: _, linkToken: __, ...meeting } = await this.tokenService.getMeetingByToken(token);
+    const {
+      answer: _,
+      linkToken: __,
+      ...meeting
+    } = await this.tokenService.getMeetingByToken(token);
     if (!(req.session as any).isAdmin) delete (meeting as any).id;
     return meeting;
   }
 
   @Post(':token/live-checkin')
+  @Throttle({ write: {} })
   @HttpCode(200)
   @ApiOperation({ summary: 'Check in during the meeting' })
   @ApiOkResponse({ description: 'Checked in' })
@@ -40,6 +54,7 @@ export class TokenController {
   }
 
   @Post(':token/post-checkin')
+  @Throttle({ write: {} })
   @HttpCode(200)
   @ApiOperation({ summary: 'Post-meeting check-in before closing deadline' })
   @ApiOkResponse({ description: 'Checked in or wrong answer' })
@@ -47,7 +62,6 @@ export class TokenController {
     description: 'Deadline passed or max retries reached',
   })
   @ApiConflictResponse({
-
     description: 'Already checked in or already checked in live',
   })
   @ApiNotFoundResponse({ description: 'User or meeting not found' })
