@@ -5,12 +5,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { MeetingsService } from '../meetings.service';
 import { Meeting } from '../meeting.entity';
-import { UserMeeting } from '../../user-meetings/user-meeting.entity';
-import { computeInfractions } from '../../user-meetings/compute-infractions';
+import { UserMeetingsService } from '../../user-meetings/user-meetings.service';
 import { UsersService } from '../../users/users.service';
 import { LiveCheckinDto } from './dto/live-checkin.dto';
 import { PostCheckinDto } from './dto/post-checkin.dto';
@@ -19,10 +16,9 @@ import { ExcuseDto } from './dto/excuse.dto';
 @Injectable()
 export class TokenService {
   constructor(
-    @InjectRepository(UserMeeting)
-    private readonly userMeetings: Repository<UserMeeting>,
     private readonly meetingsService: MeetingsService,
     private readonly usersService: UsersService,
+    private readonly userMeetingsService: UserMeetingsService,
   ) {}
 
   getMeetingByToken(token: string): Promise<Meeting> {
@@ -45,32 +41,14 @@ export class TokenService {
     if (!this.isLiveWindowOpen(meeting))
       throw new ForbiddenException('live check-in is not open');
 
-    let record = await this.userMeetings.findOneBy({
-      meetingId: meeting.id,
-      userId: user.id,
-    });
+    let record = await this.userMeetingsService.findOne(user.id, meeting.id);
     if (record?.liveCheckedInAt)
       throw new ConflictException('already checked in');
 
-    if (!record)
-      record = this.userMeetings.create({
-        meetingId: meeting.id,
-        userId: user.id,
-      });
+    if (!record) record = this.userMeetingsService.init(user.id, meeting.id);
     record.liveCheckedInAt = new Date();
     record.attendanceType = dto.attendanceType;
-    record.infractions = computeInfractions(
-      {
-        ...record,
-        liveCheckinDeadline: new Date(
-          new Date(meeting.date).getTime() +
-            meeting.checkinWindowMinutes * 60_000,
-        ),
-        checkinDeadline: new Date(meeting.checkinDeadline),
-      },
-      meeting.capInfractions,
-    );
-    await this.userMeetings.save(record);
+    await this.userMeetingsService.syncInfractions(record, meeting, user.id);
 
     return { message: 'checked in' };
   }
@@ -92,10 +70,7 @@ export class TokenService {
       throw new ForbiddenException('check-in deadline passed');
     }
 
-    let record = await this.userMeetings.findOneBy({
-      meetingId: meeting.id,
-      userId: user.id,
-    });
+    let record = await this.userMeetingsService.findOne(user.id, meeting.id);
 
     if (record?.liveCheckedInAt)
       throw new ConflictException('already checked in live');
@@ -104,25 +79,10 @@ export class TokenService {
 
     // No question or answer not checked — accept unconditionally
     if (!meeting.question || !meeting.checkAnswer) {
-      if (!record)
-        record = this.userMeetings.create({
-          meetingId: meeting.id,
-          userId: user.id,
-        });
+      if (!record) record = this.userMeetingsService.init(user.id, meeting.id);
       record.postCheckedInAt = new Date();
       record.answerCorrect = meeting.question ? true : null;
-      record.infractions = computeInfractions(
-        {
-          ...record,
-          liveCheckinDeadline: new Date(
-            new Date(meeting.date).getTime() +
-              meeting.checkinWindowMinutes * 60_000,
-          ),
-          checkinDeadline: new Date(meeting.checkinDeadline),
-        },
-        meeting.capInfractions,
-      );
-      await this.userMeetings.save(record);
+      await this.userMeetingsService.syncInfractions(record, meeting, user.id);
       return {
         message: 'checked in',
         answerCorrect: meeting.question ? true : undefined,
@@ -134,11 +94,7 @@ export class TokenService {
       throw new BadRequestException('answer is required');
 
     if (!record) {
-      record = this.userMeetings.create({
-        meetingId: meeting.id,
-        userId: user.id,
-        answerAttempts: 0,
-      });
+      record = this.userMeetingsService.init(user.id, meeting.id, { answerAttempts: 0 });
     }
 
     const correct =
@@ -147,23 +103,12 @@ export class TokenService {
     if (correct) {
       record.postCheckedInAt = new Date();
       record.answerCorrect = true;
-      record.infractions = computeInfractions(
-        {
-          ...record,
-          liveCheckinDeadline: new Date(
-            new Date(meeting.date).getTime() +
-              meeting.checkinWindowMinutes * 60_000,
-          ),
-          checkinDeadline: new Date(meeting.checkinDeadline),
-        },
-        meeting.capInfractions,
-      );
-      await this.userMeetings.save(record);
+      await this.userMeetingsService.syncInfractions(record, meeting, user.id);
       return { message: 'checked in', answerCorrect: true };
     }
 
     record.answerAttempts += 1;
-    await this.userMeetings.save(record);
+    await this.userMeetingsService.save(record);
 
     const attemptsRemaining = meeting.maxRetries - record.answerAttempts;
     if (attemptsRemaining <= 0) {
@@ -192,31 +137,15 @@ export class TokenService {
     if (new Date() >= excuseDeadline)
       throw new ForbiddenException('excuse deadline passed');
 
-    const existing = await this.userMeetings.findOneBy({
-      meetingId: meeting.id,
-      userId: user.id,
-    });
+    const existing = await this.userMeetingsService.findOne(user.id, meeting.id);
 
     if (existing?.excusedAt || existing?.liveCheckedInAt)
       throw new ConflictException('already submitted');
 
-    const record =
-      existing ??
-      this.userMeetings.create({ meetingId: meeting.id, userId: user.id });
+    const record = existing ?? this.userMeetingsService.init(user.id, meeting.id);
     record.excusedAt = new Date();
     record.excuseType = dto.excuseType;
-    record.infractions = computeInfractions(
-      {
-        ...record,
-        liveCheckinDeadline: new Date(
-          new Date(meeting.date).getTime() +
-            meeting.checkinWindowMinutes * 60_000,
-        ),
-        checkinDeadline: new Date(meeting.checkinDeadline),
-      },
-      meeting.capInfractions,
-    );
-    await this.userMeetings.save(record);
+    await this.userMeetingsService.syncInfractions(record, meeting, user.id);
 
     return { message: 'excuse submitted' };
   }

@@ -1,11 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { Meeting } from '../meeting.entity';
 import { MeetingsService } from '../meetings.service';
 import { UsersService } from '../../users/users.service';
 import { ExcuseType, UserMeeting } from '../../user-meetings/user-meeting.entity';
-import { computeInfractions } from '../../user-meetings/compute-infractions';
+import { UserMeetingsService } from '../../user-meetings/user-meetings.service';
 import { User } from '../../users/user.entity';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 
@@ -27,15 +25,10 @@ export interface AttendanceRecord {
 @Injectable()
 export class AttendanceService {
   constructor(
-    @InjectRepository(UserMeeting)
-    private readonly userMeetings: Repository<UserMeeting>,
     private readonly meetingsService: MeetingsService,
     private readonly usersService: UsersService,
+    private readonly userMeetingsService: UserMeetingsService,
   ) {}
-
-  computeInfractions(record: UserMeeting, meeting: Meeting): number {
-    return computeInfractions({ ...record, liveCheckinDeadline: new Date(new Date(meeting.date).getTime() + meeting.checkinWindowMinutes * 60_000), checkinDeadline: new Date(meeting.checkinDeadline) }, meeting.capInfractions);
-  }
 
   private toRecord(user: User, um: UserMeeting, infractions: number | null): AttendanceRecord {
     return {
@@ -77,40 +70,24 @@ export class AttendanceService {
     const meeting = await this.meetingsService.findOne(meetingId);
     const [users, records] = await Promise.all([
       this.usersService.findAll(),
-      this.userMeetings.findBy({ meetingId }),
+      this.userMeetingsService.findByMeeting(meetingId),
     ]);
 
     const recordMap = new Map(records.map((r) => [r.userId, r]));
-    const now = new Date();
-    const isPastDeadline = now >= new Date(meeting.checkinDeadline);
-    const toCreate: UserMeeting[] = [];
 
-    const attendance = users.map((user) => {
-      const existing = recordMap.get(user.id);
-      if (existing) return this.toRecord(user, existing, existing.infractions);
+    const attendance = await Promise.all(
+      users.map(async (user) => {
+        const existing = recordMap.get(user.id) ?? null;
+        const { infractions, record } = await this.userMeetingsService.syncInfractions(
+          existing,
+          meeting,
+          user.id,
+        );
 
-      if (!isPastDeadline) return this.pendingRecord(user);
-
-      const absent = this.userMeetings.create({
-        userId: user.id,
-        meetingId,
-        excusedAt: null,
-        excuseType: null,
-        liveCheckedInAt: null,
-        postCheckedInAt: null,
-        isLate: null,
-        attendanceType: null,
-        answerCorrect: null,
-        infractions: computeInfractions(
-          { isLate: null, liveCheckedInAt: null, postCheckedInAt: null, excuseType: null, liveCheckinDeadline: new Date(new Date(meeting.date).getTime() + meeting.checkinWindowMinutes * 60_000), checkinDeadline: new Date(meeting.checkinDeadline) },
-          meeting.capInfractions,
-        ),
-      });
-      toCreate.push(absent);
-      return this.toRecord(user, absent, absent.infractions);
-    });
-
-    if (toCreate.length) await this.userMeetings.save(toCreate);
+        if (infractions === null) return this.pendingRecord(user);
+        return this.toRecord(user, record!, infractions);
+      }),
+    );
 
     return { ...meeting, attendance };
   }
@@ -126,25 +103,18 @@ export class AttendanceService {
     ]);
     if (!meeting || !user) throw new NotFoundException('meeting or user not found');
 
-    let record = await this.userMeetings.findOneBy({ meetingId, userId });
+    let record = await this.userMeetingsService.findOne(userId, meetingId);
     if (!record) {
-      record = this.userMeetings.create({
-        meetingId,
-        userId,
-        excusedAt: null,
-        excuseType: null,
-        liveCheckedInAt: null,
-        postCheckedInAt: null,
-        isLate: null,
-        attendanceType: null,
-        answerCorrect: null,
-      });
+      record = this.userMeetingsService.init(userId, meetingId);
     }
 
     Object.assign(record, dto);
-    record.infractions = computeInfractions({ ...record, liveCheckinDeadline: new Date(new Date(meeting.date).getTime() + meeting.checkinWindowMinutes * 60_000), checkinDeadline: new Date(meeting.checkinDeadline) }, meeting.capInfractions);
-    await this.userMeetings.save(record);
+    const { infractions, record: saved } = await this.userMeetingsService.syncInfractions(
+      record,
+      meeting,
+      userId,
+    );
 
-    return this.toRecord(user, record, record.infractions);
+    return this.toRecord(user, saved!, infractions);
   }
 }

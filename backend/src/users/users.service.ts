@@ -4,9 +4,8 @@ import { Repository } from 'typeorm';
 import CreateUserDto from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './user.entity';
-import { UserMeeting } from '../user-meetings/user-meeting.entity';
 import { Meeting } from '../meetings/meeting.entity';
-import { computeInfractions } from '../user-meetings/compute-infractions';
+import { UserMeetingsService } from '../user-meetings/user-meetings.service';
 import { RZ_ID_REGEX, RZ_ID_EXCEPTIONS } from './rz-id';
 
 @Injectable()
@@ -14,10 +13,9 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly users: Repository<User>,
-    @InjectRepository(UserMeeting)
-    private readonly userMeetings: Repository<UserMeeting>,
     @InjectRepository(Meeting)
     private readonly meetings: Repository<Meeting>,
+    private readonly userMeetingsService: UserMeetingsService,
   ) {}
 
   validateRzId(rzId: string): { valid: boolean } {
@@ -63,65 +61,34 @@ export class UsersService {
     const user = await this.findOne(id);
     const [allMeetings, records] = await Promise.all([
       this.meetings.find({ order: { date: 'ASC' } }),
-      this.userMeetings.findBy({ userId: id }),
+      this.userMeetingsService.findByUser(id),
     ]);
 
     const recordMap = new Map(records.map((r) => [r.meetingId, r]));
-    const now = new Date();
-    let totalInfractions = 0;
+    const { stats, meetings: entries, toSave } = this.userMeetingsService.computeUserStats(
+      user,
+      allMeetings,
+      recordMap,
+      new Date(),
+    );
 
-    const meetingEntries = allMeetings.map((meeting) => {
-      const r = recordMap.get(meeting.id);
-      const isPastDeadline = now >= new Date(meeting.checkinDeadline);
-
-      if (r) {
-        totalInfractions += r.infractions;
-        return {
-          date: meeting.date,
-          excuseType: r.excuseType,
-          liveCheckedIn: !!r.liveCheckedInAt,
-          postCheckedIn: !!r.postCheckedInAt,
-          isLate: r.isLate,
-          answerCorrect: r.answerCorrect,
-          infractions: r.infractions,
-        };
-      }
-
-      if (!isPastDeadline) {
-        return {
-          date: meeting.date,
-          excuseType: null,
-          liveCheckedIn: false,
-          postCheckedIn: false,
-          isLate: null,
-          answerCorrect: null,
-          infractions: null,
-        };
-      }
-
-      const resolved = computeInfractions(
-        { isLate: null, liveCheckedInAt: null, postCheckedInAt: null, excuseType: null, liveCheckinDeadline: new Date(new Date(meeting.date).getTime() + meeting.checkinWindowMinutes * 60_000), checkinDeadline: new Date(meeting.checkinDeadline) },
-        meeting.capInfractions,
-      );
-      totalInfractions += resolved;
-      return {
-        date: meeting.date,
-        excuseType: null,
-        liveCheckedIn: false,
-        postCheckedIn: false,
-        isLate: null,
-        answerCorrect: null,
-        infractions: resolved,
-      };
-    });
+    if (toSave.length) await this.userMeetingsService.saveAll(toSave);
 
     return {
       id: user.id,
       rzId: user.rzId,
       firstName: user.firstName,
       lastName: user.lastName,
-      totalInfractions,
-      meetings: meetingEntries,
+      totalInfractions: stats.totalInfractions,
+      meetings: entries.map((m) => ({
+        date: m.date,
+        excuseType: m.excuseType,
+        liveCheckedIn: m.liveCheckedIn ?? false,
+        postCheckedIn: m.postCheckedIn ?? false,
+        isLate: m.isLate,
+        answerCorrect: m.answerCorrect,
+        infractions: m.infractions,
+      })),
     };
   }
 }

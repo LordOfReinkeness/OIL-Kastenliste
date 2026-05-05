@@ -1,27 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import * as ExcelJS from 'exceljs';
 import { MeetingsService } from '../../meetings/meetings.service';
 import { UsersService } from '../../users/users.service';
 import { ExcuseType, UserMeeting } from '../../user-meetings/user-meeting.entity';
-import { computeInfractions } from '../../user-meetings/compute-infractions';
+import { UserMeetingsService } from '../../user-meetings/user-meetings.service';
 import { Meeting } from '../../meetings/meeting.entity';
 
 @Injectable()
 export class AdminStatsService {
   constructor(
-    @InjectRepository(UserMeeting)
-    private readonly userMeetings: Repository<UserMeeting>,
     private readonly meetingsService: MeetingsService,
     private readonly usersService: UsersService,
+    private readonly userMeetingsService: UserMeetingsService,
   ) {}
 
   async getStats() {
     const [users, meetings, records] = await Promise.all([
       this.usersService.findAll(),
       this.meetingsService.findAll(),
-      this.userMeetings.find(),
+      this.userMeetingsService.findAll(),
     ]);
 
     const recordMap = new Map<string, Map<string, UserMeeting>>();
@@ -31,78 +28,14 @@ export class AdminStatsService {
     }
 
     const now = new Date();
-    const toCreate: UserMeeting[] = [];
+    const toSave: UserMeeting[] = [];
 
     const result = users.map((user) => {
       const userRecords = recordMap.get(user.id) ?? new Map<string, UserMeeting>();
-      let absent = 0;
-      let late = 0;
-      let pending = 0;
-      let totalCheckins = 0;
-      let totalInfractions = 0;
+      const { stats, meetings: entries, toSave: userToSave } =
+        this.userMeetingsService.computeUserStats(user, meetings, userRecords, now);
 
-      const meetingEntries = meetings.map((meeting) => {
-        const existing = userRecords.get(meeting.id);
-        if (existing) {
-          if (existing.isLate && existing.excuseType !== ExcuseType.LATE) late++;
-          if (!existing.liveCheckedInAt && existing.excuseType !== ExcuseType.ABSENT) absent++;
-          if (existing.liveCheckedInAt) totalCheckins++;
-          totalInfractions += existing.infractions;
-          return {
-            id: meeting.id,
-            date: meeting.date,
-            liveCheckedIn: existing.liveCheckedInAt !== null,
-            postCheckedIn: existing.postCheckedInAt !== null,
-            isLate: existing.isLate,
-            excuseType: existing.excuseType,
-            infractions: existing.infractions,
-          };
-        }
-
-        const isPastDeadline = now >= new Date(meeting.checkinDeadline);
-        if (isPastDeadline) {
-          const infractions = computeInfractions(
-            { isLate: null, liveCheckedInAt: null, postCheckedInAt: null, excuseType: null, liveCheckinDeadline: new Date(new Date(meeting.date).getTime() + meeting.checkinWindowMinutes * 60_000), checkinDeadline: new Date(meeting.checkinDeadline) },
-            meeting.capInfractions,
-          );
-          toCreate.push(
-            this.userMeetings.create({
-              userId: user.id,
-              meetingId: meeting.id,
-              excusedAt: null,
-              excuseType: null,
-              liveCheckedInAt: null,
-              postCheckedInAt: null,
-              isLate: null,
-              attendanceType: null,
-              answerCorrect: null,
-              infractions,
-            }),
-          );
-          absent++;
-          totalInfractions += infractions;
-          return {
-            id: meeting.id,
-            date: meeting.date,
-            liveCheckedIn: false,
-            postCheckedIn: false,
-            isLate: null,
-            excuseType: null,
-            infractions,
-          };
-        }
-
-        pending++;
-        return {
-          id: meeting.id,
-          date: meeting.date,
-          liveCheckedIn: null,
-          postCheckedIn: null,
-          isLate: null,
-          excuseType: null,
-          infractions: null,
-        };
-      });
+      toSave.push(...userToSave);
 
       return {
         id: user.id,
@@ -111,17 +44,25 @@ export class AdminStatsService {
         lastName: user.lastName,
         stats: {
           totalMeetings: meetings.length,
-          totalCheckins,
-          pending,
-          absent,
-          late,
-          infractions: totalInfractions,
+          totalCheckins: stats.totalCheckins,
+          pending: stats.pending,
+          absent: stats.absent,
+          late: stats.late,
+          infractions: stats.totalInfractions,
         },
-        meetings: meetingEntries,
+        meetings: entries.map((m) => ({
+          id: m.meetingId,
+          date: m.date,
+          liveCheckedIn: m.liveCheckedIn,
+          postCheckedIn: m.postCheckedIn,
+          isLate: m.isLate,
+          excuseType: m.excuseType,
+          infractions: m.infractions,
+        })),
       };
     });
 
-    if (toCreate.length) await this.userMeetings.save(toCreate);
+    if (toSave.length) await this.userMeetingsService.saveAll(toSave);
 
     return result;
   }
@@ -130,7 +71,7 @@ export class AdminStatsService {
     const [stats, meetings, records] = await Promise.all([
       this.getStats(),
       this.meetingsService.findAll(),
-      this.userMeetings.find(),
+      this.userMeetingsService.findAll(),
     ]);
 
     const recordMap = new Map<string, Map<string, UserMeeting>>();
@@ -140,7 +81,17 @@ export class AdminStatsService {
     }
 
     const meetingDates = meetings.map((m) => this.formatDate(m));
-    const header = ['rzId', 'firstName', 'lastName', ...meetingDates, 'total_checkins', 'pending', 'late', 'excused_absent', 'infractions'].join(',');
+    const header = [
+      'rzId',
+      'firstName',
+      'lastName',
+      ...meetingDates,
+      'total_checkins',
+      'pending',
+      'late',
+      'excused_absent',
+      'infractions',
+    ].join(',');
 
     const rows = stats.map((user) => {
       const userRecords = recordMap.get(user.id) ?? new Map<string, UserMeeting>();
@@ -172,7 +123,7 @@ export class AdminStatsService {
     const [stats, meetings, records] = await Promise.all([
       this.getStats(),
       this.meetingsService.findAll(),
-      this.userMeetings.find(),
+      this.userMeetingsService.findAll(),
     ]);
 
     const recordMap = new Map<string, Map<string, UserMeeting>>();
@@ -227,7 +178,6 @@ export class AdminStatsService {
         infractions: user.stats.infractions,
       });
 
-      // Color meeting infraction cells
       for (const meeting of meetings) {
         const val = meetingCols[meeting.id];
         const col = sheet.getColumn(meeting.id);
@@ -239,7 +189,6 @@ export class AdminStatsService {
         }
       }
 
-      // Color infractions total cell based on critical_missing threshold
       if (criticalMissing !== undefined) {
         const infractionsCell = row.getCell('infractions');
         if (user.stats.infractions >= criticalMissing) {
