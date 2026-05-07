@@ -107,9 +107,12 @@ export function LiveCheckinPopup({ token }: LiveCheckinPopupProps) {
         </>
       )}
 
-      {step === 'success' && (
+      {step === 'success' && meeting && (
         <>
-          <p className={styles.success}>Erfolgreich eingecheckt!</p>
+          <div className={styles.success}>
+            <span>Erfolgreich eingecheckt!</span>
+            <span>{formatDateTimeLong(meeting.date)}</span>
+          </div>
           <button className={styles.buttonSecondary} onClick={() => navigate('/')}>
             Zur Startseite
           </button>

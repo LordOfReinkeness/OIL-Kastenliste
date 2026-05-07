@@ -12,13 +12,15 @@ interface ExcusePopupProps {
 
 type ExcuseType = 'absent' | 'late';
 
+type Step = 'form' | 'submitting' | 'success';
+
 export function ExcusePopup({ onClose, onSuccess }: ExcusePopupProps) {
   const { user } = useUserSession();
   const [meeting, setMeeting] = useState<any>(null);
   const [loadingMeeting, setLoadingMeeting] = useState(true);
   const [noMeeting, setNoMeeting] = useState(false);
   const [excuseType, setExcuseType] = useState<ExcuseType>('absent');
-  const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState<Step>('form');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -33,14 +35,14 @@ export function ExcusePopup({ onClose, onSuccess }: ExcusePopupProps) {
 
   async function handleSubmit() {
     if (!user || !meeting) return;
-    setSubmitting(true);
+    setStep('submitting');
     setError('');
     try {
       await MeetingsService.meetingsControllerExcuseNextMeeting({
         rzId: user.rzId,
         excuseType: excuseType as ExcuseDto.excuseType,
       });
-      onSuccess();
+      setStep('success');
     } catch (e) {
       if (e instanceof ApiError) {
         if (e.status === 403) setError('Die Entschuldigungsfrist ist abgelaufen.');
@@ -49,9 +51,11 @@ export function ExcusePopup({ onClose, onSuccess }: ExcusePopupProps) {
       } else {
         setError('Fehler beim Server. Bitte erneut versuchen.');
       }
-      setSubmitting(false);
+      setStep('form');
     }
   }
+
+  const isSubmitting = step === 'submitting';
 
   return (
     <Popup title="Entschuldigung einreichen" closable onClose={onClose}>
@@ -63,12 +67,11 @@ export function ExcusePopup({ onClose, onSuccess }: ExcusePopupProps) {
         <p className={styles.muted}>Kein bevorstehendes Meeting gefunden.</p>
       )}
 
-      {meeting && (
+      {(step === 'form' || step === 'submitting') && meeting && (
         <>
           <div className={styles.meetingInfo}>
             <span className={styles.meetingLabel}>Nächstes Meeting</span>
             <span className={styles.meetingDate}>{formatDateTimeLong(meeting.date)}</span>
-
           </div>
 
           <div className={styles.field}>
@@ -77,12 +80,14 @@ export function ExcusePopup({ onClose, onSuccess }: ExcusePopupProps) {
               <button
                 className={`${styles.segment} ${excuseType === 'absent' ? styles.active : ''}`}
                 onClick={() => setExcuseType('absent')}
+                disabled={isSubmitting}
               >
                 Abwesend
               </button>
               <button
                 className={`${styles.segment} ${excuseType === 'late' ? styles.active : ''}`}
                 onClick={() => setExcuseType('late')}
+                disabled={isSubmitting}
               >
                 Verspätet
               </button>
@@ -94,9 +99,21 @@ export function ExcusePopup({ onClose, onSuccess }: ExcusePopupProps) {
           <button
             className={styles.button}
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={isSubmitting}
           >
-            {submitting ? 'Wird eingereicht…' : 'Entschuldigung einreichen'}
+            {isSubmitting ? 'Wird eingereicht…' : 'Entschuldigung einreichen'}
+          </button>
+        </>
+      )}
+
+      {step === 'success' && meeting && (
+        <>
+          <div className={styles.success}>
+            <span>Entschuldigung erfolgreich eingereicht.</span>
+            <span>{formatDateTimeLong(meeting.date)}</span>
+          </div>
+          <button className={styles.button} onClick={onSuccess}>
+            Schließen
           </button>
         </>
       )}

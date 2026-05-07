@@ -121,6 +121,9 @@
 }
 
 .success {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
   font-size: var(--text-sm);
   font-weight: 700;
   margin: 0;
