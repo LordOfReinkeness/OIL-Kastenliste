@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { AdminStatsService, UsersService } from '../../api';
 import { EditUserPopup } from '../../components/popup/EditUserPopup';
 import { ConfirmPopup } from '../../components/popup/ConfirmPopup';
+import { SearchInput } from '../../components/ui/SearchInput';
 import styles from './Users.module.css';
 
 interface UserRow {
@@ -23,6 +24,7 @@ export function AdminUsers() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [query, setQuery] = useState('');
   const [editUser, setEditUser] = useState<UserRow | null>(null);
   const [deleteUser, setDeleteUser] = useState<UserRow | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -58,10 +60,22 @@ export function AdminUsers() {
   if (error)   return <p className={styles.muted}>{error}</p>;
   if (!users.length) return <p className={styles.muted}>Keine Benutzer vorhanden.</p>;
 
+  const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const filteredUsers = tokens.length === 0 ? users : users.filter(u =>
+    tokens.every(t =>
+      u.firstName.toLowerCase().includes(t) ||
+      u.lastName.toLowerCase().includes(t) ||
+      u.rzId.toLowerCase().includes(t)
+    )
+  );
+
   return (
     <div className={styles.page}>
+      <div className={styles.searchRow}>
+        <SearchInput value={query} onChange={setQuery} />
+      </div>
       <ul className={styles.list}>
-        {users.map(user => (
+        {filteredUsers.map(user => (
           <li key={user.id} className={styles.item}>
             <div className={styles.info}>
               <span className={styles.name}>{user.lastName}, {user.firstName}</span>
@@ -85,7 +99,11 @@ export function AdminUsers() {
         ))}
       </ul>
 
-      <p className={styles.summaryLine}>{users.length} Benutzer</p>
+      <p className={styles.summaryLine}>
+        {filteredUsers.length === users.length
+          ? `${users.length} Benutzer`
+          : `${filteredUsers.length} von ${users.length} Benutzern`}
+      </p>
 
       {editUser && (
         <EditUserPopup

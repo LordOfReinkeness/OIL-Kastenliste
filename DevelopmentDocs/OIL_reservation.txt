@@ -1,0 +1,34 @@
+## Laborstrafen — Implementation Plan
+
+**Task:** Add a "Laborstrafen" feature that lets admins assign manual penalties to users (with predefined reasons or a custom text), and improve the user-facing home page so users see their total infraction count at a glance and can expand it into a full chronological history of meetings and lab penalties.
+
+### Backend
+
+1. Create `LabPenaltyType` enum and a `LAB_PENALTY_LABELS: Record<LabPenaltyType, string>` map in a shared file
+2. `LabPenalty` entity with `id`, `userId`, `date`, `type`, `customText?`
+3. DTO: `type` required, `customText` required-if-`MISC` (custom validator)
+4. `LabPenaltiesService`: create, delete, find-by-user
+5. `LabPenaltiesController`: POST/DELETE endpoints (admin), GET by user
+6. `getUserStats` includes `labPenalties: { date, type, label, customText?, infractions: 1 }[]` and folds them into `totalInfractions`
+
+### Frontend — Admin
+
+7. Add "Laborstrafe" button per user row in the Users admin page
+8. New `LabPenaltyPopup`: date picker, enum buttons, conditional text field for `MISC`
+9. List existing Laborstrafen per user with a delete action
+
+### Frontend — User home
+
+10. Expand `getUserStats` API response type to include `meetings[]` and `labPenalties[]`
+11. Home page: show total infractions with expand toggle
+12. Expanded: merged + date-sorted list rendering meeting rows and lab penalty rows differently
+
+---
+
+# ToDo:
+- [ ] Neues logo
+- [x] Rückmeldung erfolgreich (anzeigen)
+- [ ] Was ist letzte woche passiert bei Entschuldigung.
+- [x] Admin overview, find people 
+- [ ] Email verification
+- [ ] Backup and restore database

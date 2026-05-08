@@ -3,6 +3,7 @@ import { Popup } from './Popup';
 import { MeetingsService } from '../../api';
 import { DurationField } from '../ui/DurationField';
 import { toUTC } from '../../utils/date';
+import { config } from '../../config';
 import styles from './NewMeetingPopup.module.css';
 
 interface NewMeetingPopupProps {
@@ -14,7 +15,7 @@ function pad(n: number) { return String(n).padStart(2, '0'); }
 
 function defaultParts() {
   const d = new Date();
-  d.setHours(13, 15, 0, 0);
+  d.setHours(config.meeting.defaultMeetingStartTime.hour, config.meeting.defaultMeetingStartTime.minute, 0, 0);
   return {
     date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
     time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
@@ -34,19 +35,19 @@ export function NewMeetingPopup({ onClose, onCreated }: NewMeetingPopupProps) {
   const [meetingTime, setMeetingTime] = useState(init.time);
 
   // Excuse deadline: relative before meeting
-  const [excuseDays, setExcuseDays]       = useState(0);
-  const [excuseHours, setExcuseHours]     = useState(1);
-  const [excuseMinutes, setExcuseMinutes] = useState(0);
+  const [excuseDays, setExcuseDays]       = useState<number>(config.meeting.defaultExcuseDeadline.days);
+  const [excuseHours, setExcuseHours]     = useState<number>(config.meeting.defaultExcuseDeadline.hours);
+  const [excuseMinutes, setExcuseMinutes] = useState<number>(config.meeting.defaultExcuseDeadline.minutes);
 
-  // Check-in deadline: relative after meeting (default +4 days)
-  const [checkinDays, setCheckinDays]       = useState(4);
-  const [checkinHours, setCheckinHours]     = useState(0);
-  const [checkinMinutes, setCheckinMinutes] = useState(0);
+  // Check-in deadline: relative after meeting
+  const [checkinDays, setCheckinDays]       = useState<number>(config.meeting.defaultCheckInDeadline.days);
+  const [checkinHours, setCheckinHours]     = useState<number>(config.meeting.defaultCheckInDeadline.hours);
+  const [checkinMinutes, setCheckinMinutes] = useState<number>(config.meeting.defaultCheckInDeadline.minutes);
 
   // Meetingdauer (live check-in window)
-  const [windowDays, setWindowDays]       = useState(0);
-  const [windowHours, setWindowHours]     = useState(1);
-  const [windowMinutes, setWindowMinutes] = useState(0);
+  const [windowDays, setWindowDays]       = useState<number>(config.meeting.defaultLiveWindow.days);
+  const [windowHours, setWindowHours]     = useState<number>(config.meeting.defaultLiveWindow.hours);
+  const [windowMinutes, setWindowMinutes] = useState<number>(config.meeting.defaultLiveWindow.minutes);
 
   const checkinWindowMinutes = windowDays * 1440 + windowHours * 60 + windowMinutes;
 
@@ -56,7 +57,7 @@ export function NewMeetingPopup({ onClose, onCreated }: NewMeetingPopupProps) {
   const [question, setQuestion]         = useState('');
   const [answer, setAnswer]             = useState('');
   const [checkAnswer, setCheckAnswer]   = useState(false);
-  const [maxRetries, setMaxRetries]     = useState('3');
+  const [maxRetries, setMaxRetries]     = useState(String(config.meeting.defaultMaxRetries));
   const [allowCheckin, setAllowCheckin] = useState(true);
 
   const [fristenOpen, setFristenOpen]       = useState(false);
@@ -108,7 +109,7 @@ export function NewMeetingPopup({ onClose, onCreated }: NewMeetingPopupProps) {
   async function handleCopy() {
     await navigator.clipboard.writeText(createdLink);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), config.ui.copyFeedbackMs);
   }
 
   return (

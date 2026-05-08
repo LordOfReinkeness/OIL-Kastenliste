@@ -6,6 +6,7 @@ import { MeetingLegend } from '../../components/ui/MeetingLegend';
 import { EditMeetingPopup } from '../../components/popup/EditMeetingPopup';
 import { ConfirmPopup } from '../../components/popup/ConfirmPopup';
 import { formatDateTime } from '../../utils/date';
+import { config } from '../../config';
 import styles from './Meetings.module.css';
 
 interface Meeting {
@@ -55,7 +56,7 @@ function MeetingLinkCopy({ token }: { token: string }) {
   async function handleCopy() {
     await navigator.clipboard.writeText(url);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), config.ui.copyFeedbackMs);
   }
 
   return (
@@ -123,7 +124,7 @@ function MeetingRow({ meeting, onEdited, onDeleted }: { meeting: Meeting; onEdit
               <span className={styles.chevron}>{expanded ? '▲' : '▼'}</span>
             </span>
           </button>
-          <button className={`${styles.editButton} ${liveOpen ? styles.liveActive : ''}`} onClick={() => window.open(`/live-screen/${meeting.linkToken}`, 'live-screen', 'width=420,height=600,popup=yes')}>
+          <button className={`${styles.editButton} ${liveOpen ? styles.liveActive : ''}`} onClick={() => window.open(`/live-screen/${meeting.linkToken}`, 'live-screen', `width=${config.ui.liveScreenPopup.width},height=${config.ui.liveScreenPopup.height},popup=yes`)}>
             QR
           </button>
           <button className={styles.editButton} onClick={() => setEditing(true)}>

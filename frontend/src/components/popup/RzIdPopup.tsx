@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Popup } from './Popup';
 import { UsersService, ApiError } from '../../api';
 import { useUserSession } from '../../hooks/useUserSession';
+import { config } from '../../config';
 import styles from './RzIdPopup.module.css';
 
 const DESCRIPTION = 'Gib deine HTWG RZ-ID ein, um dein Profil zu laden. Kein Passwort nötig.';
@@ -27,7 +28,7 @@ export function RzIdPopup() {
     debounceRef.current = setTimeout(async () => {
       const result = await UsersService.usersControllerValidateRzId(rzId);
       setRzIdValid(result.valid);
-    }, 300);
+    }, config.ui.debounceMs);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [rzId]);
 

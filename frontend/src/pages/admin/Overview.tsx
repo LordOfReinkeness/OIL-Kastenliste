@@ -4,6 +4,7 @@ import { AdminStatsService, MeetingsService } from '../../api';
 import { MeetingCell } from '../../components/ui/MeetingCell';
 import { MeetingLegend } from '../../components/ui/MeetingLegend';
 import { formatDateShort } from '../../utils/date';
+import { SearchInput } from '../../components/ui/SearchInput';
 import { EditAttendancePopup } from '../../components/popup/EditAttendancePopup';
 import styles from './Overview.module.css';
 
@@ -45,6 +46,7 @@ export function Overview() {
   const [meetingIdByDate, setMeetingIdByDate] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [query, setQuery] = useState('');
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
 
   function load() {
@@ -75,7 +77,14 @@ export function Overview() {
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
-  const users = [...data].sort((a, b) => a.lastName.localeCompare(b.lastName));
+  const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const users = [...data]
+    .sort((a, b) => a.lastName.localeCompare(b.lastName))
+    .filter(u => tokens.length === 0 || tokens.every(t =>
+      u.firstName.toLowerCase().includes(t) ||
+      u.lastName.toLowerCase().includes(t) ||
+      u.rzId.toLowerCase().includes(t)
+    ));
 
   return (
     <div className={styles.page}>
@@ -90,6 +99,8 @@ export function Overview() {
           </button>
         </div>
       </div>
+
+      <SearchInput value={query} onChange={setQuery} />
 
       <div className={styles.tableWrapper}>
         <table className={styles.table}>
@@ -156,7 +167,12 @@ export function Overview() {
         </table>
       </div>
 
-      <p className={styles.summaryLine}>{users.length} Mitglieder · {meetings.length} Meetings</p>
+      <p className={styles.summaryLine}>
+        {tokens.length === 0
+          ? `${users.length} Mitglieder`
+          : `${users.length} von ${data.length} Mitgliedern`}
+        {' · '}{meetings.length} Meetings
+      </p>
 
       {editTarget && (
         <EditAttendancePopup

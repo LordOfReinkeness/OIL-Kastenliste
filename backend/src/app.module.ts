@@ -2,6 +2,7 @@ import { join } from 'path';
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
+import { config } from './config';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -23,8 +24,8 @@ const THROTTLE_ON =
   imports: [
     ...(THROTTLE_ON
       ? [ThrottlerModule.forRoot([
-          { name: 'default', ttl: 60_000, limit: 60 },
-          { name: 'write',   ttl: 60_000, limit: 10 },
+          { name: 'default', ttl: config.rateLimit.defaultTtlMs, limit: config.rateLimit.defaultLimit },
+          { name: 'write',   ttl: config.rateLimit.writeTtlMs,   limit: config.rateLimit.writeLimit },
         ])]
       : []),
     ServeStaticModule.forRoot({

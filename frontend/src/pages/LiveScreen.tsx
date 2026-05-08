@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { TokenService, MeetingsService } from '../api';
 import { formatDateTimeLong } from '../utils/date';
+import { config } from '../config';
 import styles from './LiveScreen.module.css';
 
 export function LiveScreen() {
@@ -64,7 +65,7 @@ export function LiveScreen() {
         <p className={styles.date}>{dateStr}</p>
 
         <div className={styles.qr}>
-          <QRCodeSVG value={url} size={240} />
+          <QRCodeSVG value={url} size={config.ui.qrCodeSize} />
         </div>
 
         <p className={styles.token}>{token}</p>
