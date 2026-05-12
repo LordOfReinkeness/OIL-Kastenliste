@@ -20,6 +20,9 @@ export function ExcusePopup({ onClose, onSuccess }: ExcusePopupProps) {
   const [loadingMeeting, setLoadingMeeting] = useState(true);
   const [noMeeting, setNoMeeting] = useState(false);
   const [excuseType, setExcuseType] = useState<ExcuseType>('absent');
+  const [statusLastWeek, setStatusLastWeek] = useState('');
+  const [statusNextWeek, setStatusNextWeek] = useState('');
+  const [statusProblems, setStatusProblems] = useState('');
   const [step, setStep] = useState<Step>('form');
   const [error, setError] = useState('');
 
@@ -41,6 +44,11 @@ export function ExcusePopup({ onClose, onSuccess }: ExcusePopupProps) {
       await MeetingsService.meetingsControllerExcuseNextMeeting({
         rzId: user.rzId,
         excuseType: excuseType as ExcuseDto.excuseType,
+        ...(excuseType === 'absent' && {
+          statusLastWeek,
+          statusNextWeek,
+          ...(statusProblems.trim() && { statusProblems }),
+        }),
       });
       setStep('success');
     } catch (e) {
@@ -56,6 +64,7 @@ export function ExcusePopup({ onClose, onSuccess }: ExcusePopupProps) {
   }
 
   const isSubmitting = step === 'submitting';
+  const absentFieldsMissing = excuseType === 'absent' && (!statusLastWeek.trim() || !statusNextWeek.trim());
 
   return (
     <Popup title="Entschuldigung einreichen" closable onClose={onClose}>
@@ -94,12 +103,47 @@ export function ExcusePopup({ onClose, onSuccess }: ExcusePopupProps) {
             </div>
           </div>
 
+          {excuseType === 'absent' && (
+            <>
+              <div className={styles.field}>
+                <label className={styles.label}>Was hast du letzte Woche gemacht?</label>
+                <textarea
+                  className={styles.textarea}
+                  value={statusLastWeek}
+                  onChange={e => setStatusLastWeek(e.target.value)}
+                  disabled={isSubmitting}
+                  rows={3}
+                />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Was machst du diese Woche?</label>
+                <textarea
+                  className={styles.textarea}
+                  value={statusNextWeek}
+                  onChange={e => setStatusNextWeek(e.target.value)}
+                  disabled={isSubmitting}
+                  rows={3}
+                />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Probleme? <span className={styles.optional}>(optional)</span></label>
+                <textarea
+                  className={styles.textarea}
+                  value={statusProblems}
+                  onChange={e => setStatusProblems(e.target.value)}
+                  disabled={isSubmitting}
+                  rows={2}
+                />
+              </div>
+            </>
+          )}
+
           {error && <p className={styles.error}>{error}</p>}
 
           <button
             className={styles.button}
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || absentFieldsMissing}
           >
             {isSubmitting ? 'Wird eingereicht…' : 'Entschuldigung einreichen'}
           </button>

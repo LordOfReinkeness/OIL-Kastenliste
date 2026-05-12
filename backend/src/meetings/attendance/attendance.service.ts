@@ -20,6 +20,9 @@ export interface AttendanceRecord {
   attendanceType: 'in_person' | 'remote' | null;
   answerCorrect: boolean | null;
   infractions: number | null; // null = pending
+  statusLastWeek: string | null;
+  statusNextWeek: string | null;
+  statusProblems: string | null;
 }
 
 @Injectable()
@@ -44,6 +47,9 @@ export class AttendanceService {
       attendanceType: um.attendanceType,
       answerCorrect: um.answerCorrect,
       infractions,
+      statusLastWeek: um.statusLastWeek,
+      statusNextWeek: um.statusNextWeek,
+      statusProblems: um.statusProblems,
     };
   }
 
@@ -61,6 +67,9 @@ export class AttendanceService {
       attendanceType: null,
       answerCorrect: null,
       infractions: null,
+      statusLastWeek: null,
+      statusNextWeek: null,
+      statusProblems: null,
     };
   }
 

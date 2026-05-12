@@ -7,15 +7,17 @@ export function Header() {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <div className={styles.logoGroup}>
-          <img src="/oil-nsa.svg" alt="OIL NSA" className={styles.logo} />
-          <p className={styles.subtitle}>Nachverfolgung, Sitzungen & Anwesenheit</p>
+        <div className={styles.mobileStack}>
+          <div className={styles.logoGroup}>
+            <img src="/oil-nsa.svg" alt="OIL NSA" className={styles.logo} />
+            <p className={styles.subtitle}>Nachverfolgung, Sitzungen & Anwesenheit</p>
+          </div>
+          {user && (
+            <button className={styles.logout} onClick={clearUser}>
+              Abmelden
+            </button>
+          )}
         </div>
-        {user && (
-          <button className={styles.logout} onClick={clearUser}>
-            Abmelden
-          </button>
-        )}
       </div>
     </header>
   );

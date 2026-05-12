@@ -12,6 +12,7 @@ import { UsersService } from '../../users/users.service';
 import { LiveCheckinDto } from './dto/live-checkin.dto';
 import { PostCheckinDto } from './dto/post-checkin.dto';
 import { ExcuseDto } from './dto/excuse.dto';
+import { ExcuseType } from '../../user-meetings/user-meeting.entity';
 
 @Injectable()
 export class TokenService {
@@ -145,6 +146,11 @@ export class TokenService {
     const record = existing ?? this.userMeetingsService.init(user.id, meeting.id);
     record.excusedAt = new Date();
     record.excuseType = dto.excuseType;
+    if (dto.excuseType === ExcuseType.ABSENT) {
+      record.statusLastWeek = dto.statusLastWeek ?? null;
+      record.statusNextWeek = dto.statusNextWeek ?? null;
+      record.statusProblems = dto.statusProblems ?? null;
+    }
     await this.userMeetingsService.syncInfractions(record, meeting, user.id);
 
     return { message: 'excuse submitted' };

@@ -48,6 +48,10 @@ export function AdminLayout() {
           className={({ isActive }) => `${styles.tab} ${isActive ? styles.active : ''}`}>
           Benutzer
         </NavLink>
+        <NavLink to="/admin/standup"
+          className={({ isActive }) => `${styles.tab} ${isActive ? styles.active : ''}`}>
+          Standup
+        </NavLink>
       </nav>
       <main className={styles.content}>
         <Outlet context={{ refreshKey }} />
