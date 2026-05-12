@@ -1,3 +1,13 @@
+# ToDo in this project
+
+- [x] Rückmeldung erfolgreich (anzeigen)
+- [x] Admin overview, find people
+- [x] Backup and restore database
+- [x] Neues logo
+- [ ] Email verification
+- [ ] Was ist letzte Woche passiert bei Entschuldigung?
+- [ ] ?Force post-check in despite being present?
+
 ## Laborstrafen — Implementation Plan
 
 **Task:** Add a "Laborstrafen" feature that lets admins assign manual penalties to users (with predefined reasons or a custom text), and improve the user-facing home page so users see their total infraction count at a glance and can expand it into a full chronological history of meetings and lab penalties.
@@ -23,12 +33,3 @@
 11. Home page: show total infractions with expand toggle
 12. Expanded: merged + date-sorted list rendering meeting rows and lab penalty rows differently
 
----
-
-# ToDo:
-- [x] Rückmeldung erfolgreich (anzeigen)
-- [x] Admin overview, find people
-- [x] Backup and restore database
-- [x] Neues logo
-- [ ] Email verification
-- [ ] Was ist letzte woche passiert bei Entschuldigung.

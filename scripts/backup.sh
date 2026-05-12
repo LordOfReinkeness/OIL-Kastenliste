@@ -4,7 +4,7 @@ set -euo pipefail
 CONTAINER="${CONTAINER:-oil-kastenliste-db}"
 DB_USER="${DB_USER:-postgres}"
 DB_NAME="${DB_NAME:-kastenliste}"
-OUTPUT_DIR="${OUTPUT_DIR:-.}"
+OUTPUT_DIR="${OUTPUT_DIR:-~/backups}"
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 OUTPUT="${OUTPUT_DIR}/kastenliste_${TIMESTAMP}.dump"
