@@ -26,9 +26,9 @@
 ---
 
 # ToDo:
-- [ ] Neues logo
 - [x] Rückmeldung erfolgreich (anzeigen)
-- [ ] Was ist letzte woche passiert bei Entschuldigung.
-- [x] Admin overview, find people 
+- [x] Admin overview, find people
+- [x] Backup and restore database
+- [x] Neues logo
 - [ ] Email verification
-- [ ] Backup and restore database
+- [ ] Was ist letzte woche passiert bei Entschuldigung.
