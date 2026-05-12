@@ -1,5 +1,7 @@
 # Kastenliste OIL — Project Summary
 
+Kastenliste
+
 ## Concept
 
 Track attendance for recurring meetings. Members excuse themselves beforehand, check in live during the meeting, and do a post-meeting check-in (optionally answering a question) after. Missed meetings without excuse accumulate as infractions. Admin gets full oversight and CSV/XLSX export.
