@@ -5,6 +5,15 @@
 export type ExcuseDto = {
     rzId: string;
     excuseType: ExcuseDto.excuseType;
+    /**
+     * Required when excuseType is absent
+     */
+    statusLastWeek?: string;
+    /**
+     * Required when excuseType is absent
+     */
+    statusNextWeek?: string;
+    statusProblems?: string;
 };
 export namespace ExcuseDto {
     export enum excuseType {

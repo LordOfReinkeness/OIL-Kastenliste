@@ -52,4 +52,13 @@ export class UserMeeting {
 
   @Column({ type: 'int', default: 0 })
   infractions: number;
+
+  @Column({ type: 'text', nullable: true })
+  statusLastWeek: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  statusNextWeek: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  statusProblems: string | null;
 }
