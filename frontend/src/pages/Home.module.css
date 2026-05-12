@@ -30,9 +30,8 @@
   text-align: center;
 }
 
-/* Mobile: actions fill remaining height, buttons split it equally */
 .actions {
-  flex: 1;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
@@ -40,14 +39,13 @@
 
 @media (min-width: 640px) {
   .actions {
-    flex: unset;
     flex-direction: row;
   }
 }
 
 .actionButton {
   flex: 1;
-  min-height: 80px;
+  min-height: 168px;
   background: #f5f5f5;
   color: var(--color-text);
   border: 1px solid var(--color-text);
