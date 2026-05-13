@@ -42,23 +42,23 @@ export class UserMeetingsService {
   ) {}
 
   findAll(): Promise<UserMeeting[]> {
-    return this.repo.find();
+    return this.repo.find({ relations: ['user', 'meeting'] });
   }
 
   findByUser(userId: string): Promise<UserMeeting[]> {
-    return this.repo.findBy({ userId });
+    return this.repo.find({ where: { user: { id: userId } }, relations: ['user', 'meeting'] });
   }
 
   findByMeeting(meetingId: string): Promise<UserMeeting[]> {
-    return this.repo.findBy({ meetingId });
+    return this.repo.find({ where: { meeting: { id: meetingId } }, relations: ['user', 'meeting'] });
   }
 
   findOne(userId: string, meetingId: string): Promise<UserMeeting | null> {
-    return this.repo.findOneBy({ userId, meetingId });
+    return this.repo.findOne({ where: { user: { id: userId }, meeting: { id: meetingId } }, relations: ['user', 'meeting'] });
   }
 
   init(userId: string, meetingId: string, defaults: Partial<UserMeeting> = {}): UserMeeting {
-    return this.repo.create({ userId, meetingId, ...defaults });
+    return this.repo.create({ user: { id: userId } as User, meeting: { id: meetingId } as Meeting, ...defaults });
   }
 
   save(record: UserMeeting): Promise<UserMeeting> {
@@ -88,8 +88,8 @@ export class UserMeetingsService {
 
   private makeAbsent(userId: string, meetingId: string, infractions: number): UserMeeting {
     return this.repo.create({
-      userId,
-      meetingId,
+      user: { id: userId } as User,
+      meeting: { id: meetingId } as Meeting,
       excusedAt: null,
       excuseType: null,
       liveCheckedInAt: null,

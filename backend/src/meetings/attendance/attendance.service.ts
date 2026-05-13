@@ -82,7 +82,7 @@ export class AttendanceService {
       this.userMeetingsService.findByMeeting(meetingId),
     ]);
 
-    const recordMap = new Map(records.map((r) => [r.userId, r]));
+    const recordMap = new Map(records.map((r) => [r.user.id, r]));
 
     const attendance = await Promise.all(
       users.map(async (user) => {

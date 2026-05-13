@@ -64,7 +64,7 @@ export class UsersService {
       this.userMeetingsService.findByUser(id),
     ]);
 
-    const recordMap = new Map(records.map((r) => [r.meetingId, r]));
+    const recordMap = new Map(records.map((r) => [r.meeting.id, r]));
     const { stats, meetings: entries, toSave } = this.userMeetingsService.computeUserStats(
       user,
       allMeetings,
