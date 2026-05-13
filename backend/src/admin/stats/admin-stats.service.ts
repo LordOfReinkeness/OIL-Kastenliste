@@ -23,8 +23,8 @@ export class AdminStatsService {
 
     const recordMap = new Map<string, Map<string, UserMeeting>>();
     for (const r of records) {
-      if (!recordMap.has(r.userId)) recordMap.set(r.userId, new Map());
-      recordMap.get(r.userId)!.set(r.meetingId, r);
+      if (!recordMap.has(r.user.id)) recordMap.set(r.user.id, new Map());
+      recordMap.get(r.user.id)!.set(r.meeting.id, r);
     }
 
     const now = new Date();
@@ -76,8 +76,8 @@ export class AdminStatsService {
 
     const recordMap = new Map<string, Map<string, UserMeeting>>();
     for (const r of records) {
-      if (!recordMap.has(r.userId)) recordMap.set(r.userId, new Map());
-      recordMap.get(r.userId)!.set(r.meetingId, r);
+      if (!recordMap.has(r.user.id)) recordMap.set(r.user.id, new Map());
+      recordMap.get(r.user.id)!.set(r.meeting.id, r);
     }
 
     const meetingDates = meetings.map((m) => this.formatDate(m));
@@ -128,8 +128,8 @@ export class AdminStatsService {
 
     const recordMap = new Map<string, Map<string, UserMeeting>>();
     for (const r of records) {
-      if (!recordMap.has(r.userId)) recordMap.set(r.userId, new Map());
-      recordMap.get(r.userId)!.set(r.meetingId, r);
+      if (!recordMap.has(r.user.id)) recordMap.set(r.user.id, new Map());
+      recordMap.get(r.user.id)!.set(r.meeting.id, r);
     }
 
     const workbook = new ExcelJS.Workbook();

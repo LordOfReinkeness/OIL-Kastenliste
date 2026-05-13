@@ -70,6 +70,27 @@
   border-left: 4px solid var(--color-accent);
 }
 
+.textarea {
+  width: 100%;
+  padding: var(--spacing-sm);
+  font-size: var(--text-sm);
+  font-family: var(--font-family);
+  border: 1px solid var(--color-text);
+  background: var(--color-bg);
+  color: var(--color-text);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.textarea:disabled {
+  opacity: 0.5;
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--color-muted);
+}
+
 .error {
   font-size: var(--text-xs);
   color: var(--color-text);

@@ -5,8 +5,9 @@
 - [x] Backup and restore database
 - [x] Neues logo
 - [ ] Email verification
-- [ ] Was ist letzte Woche passiert bei Entschuldigung?
+- [x] Was ist letzte Woche passiert bei Entschuldigung?
 - [ ] ?Force post-check in despite being present?
+- [ ] unittests
 
 ## Laborstrafen — Implementation Plan
 

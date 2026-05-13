@@ -589,6 +589,14 @@ components:
             - late
             - absent
           example: absent
+        statusLastWeek:
+          type: string
+          description: Required when excuseType is absent
+        statusNextWeek:
+          type: string
+          description: Required when excuseType is absent
+        statusProblems:
+          type: string
       required:
         - rzId
         - excuseType

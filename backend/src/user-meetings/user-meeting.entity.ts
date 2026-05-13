@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
 import { Meeting } from '../meetings/meeting.entity';
 import { User } from '../users/user.entity';
 
@@ -7,6 +7,7 @@ export enum ExcuseType {
   ABSENT = 'absent',
 }
 
+@Unique('UQ_user_meetings_user_id_meeting_id', ['user', 'meeting'])
 @Entity('user_meetings')
 export class UserMeeting {
   @PrimaryGeneratedColumn('uuid')
@@ -16,15 +17,9 @@ export class UserMeeting {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column()
-  userId: string;
-
   @ManyToOne(() => Meeting, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'meeting_id' })
   meeting: Meeting;
-
-  @Column()
-  meetingId: string;
 
   @Column({ type: 'timestamptz', nullable: true })
   excusedAt: Date | null;
@@ -52,4 +47,13 @@ export class UserMeeting {
 
   @Column({ type: 'int', default: 0 })
   infractions: number;
+
+  @Column({ type: 'text', nullable: true })
+  statusLastWeek: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  statusNextWeek: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  statusProblems: string | null;
 }

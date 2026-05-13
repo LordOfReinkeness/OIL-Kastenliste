@@ -1,0 +1,39 @@
+services:
+  app:
+    container_name: oil-kastenliste-app-dev-ghcr
+    image: ghcr.io/lordofreinkeness/oil-kastenliste:dev
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: kastenliste
+      DB_SYNCHRONIZE: "false"
+      ADMIN_PASSWORD: changeme
+      SESSION_SECRET: changeme
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    container_name: oil-kastenliste-db-ghcr
+    image: postgres:17-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: kastenliste
+    volumes:
+      - kastenliste_ghcr_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  kastenliste_ghcr_db:

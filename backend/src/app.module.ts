@@ -1,4 +1,4 @@
-import { join } from 'path';
+import { join } from 'node:path';
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
@@ -44,6 +44,8 @@ const THROTTLE_ON =
         database: config.getOrThrow('DB_NAME'),
         autoLoadEntities: true,
         synchronize: config.get('DB_SYNCHRONIZE') === 'true',
+        migrations: [join(__dirname, 'migrations', '*.js')],
+        migrationsRun: config.get('DB_SYNCHRONIZE') !== 'true',
       }),
     }),
     AuthModule,

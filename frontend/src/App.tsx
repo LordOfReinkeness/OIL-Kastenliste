@@ -10,6 +10,7 @@ import { AdminLayout } from './components/layout/AdminLayout';
 import { Overview } from './pages/admin/Overview';
 import { AdminMeetings } from './pages/admin/Meetings';
 import { AdminUsers } from './pages/admin/Users';
+import { AdminStandup } from './pages/admin/Standup';
 import './App.module.css';
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
                 <Route index element={<Overview />} />
                 <Route path="meetings" element={<AdminMeetings />} />
                 <Route path="users" element={<AdminUsers />} />
+                <Route path="standup" element={<AdminStandup />} />
               </Route>
             </Route>
           </Routes>
