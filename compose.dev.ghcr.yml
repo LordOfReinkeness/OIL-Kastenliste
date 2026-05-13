@@ -1,7 +1,7 @@
 services:
   app:
     container_name: oil-kastenliste-app-dev-ghcr
-    image: ghcr.io/lordofreinkeness/oil-kastenliste:dev
+    image: ghcr.io/lordofreinkeness/oil-kastenliste:latest
     ports:
       - "3000:3000"
     environment:
