@@ -49,8 +49,8 @@ export function Overview() {
   const [query, setQuery] = useState('');
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
 
-  function load() {
-    setLoading(true);
+  function load(silent = false) {
+    if (!silent) setLoading(true);
     Promise.all([
       AdminStatsService.adminStatsControllerGetStats(),
       MeetingsService.meetingsControllerFindAll(),
@@ -60,7 +60,7 @@ export function Overview() {
         setMeetingIdByDate(Object.fromEntries(meetings.map((m: { date: string; id: string }) => [m.date, m.id])));
       })
       .catch(() => setError('Fehler beim Laden der Statistiken.'))
-      .finally(() => setLoading(false));
+      .finally(() => { if (!silent) setLoading(false); });
   }
 
   useEffect(() => { load(); }, [refreshKey]);
@@ -182,7 +182,7 @@ export function Overview() {
           userName={editTarget.userName}
           current={editTarget.current}
           onClose={() => setEditTarget(null)}
-          onSaved={() => { setEditTarget(null); load(); }}
+          onSaved={() => { setEditTarget(null); load(true); }}
         />
       )}
     </div>
