@@ -138,3 +138,71 @@
   color: var(--color-muted);
   font-size: var(--text-sm);
 }
+
+.controlsRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.filterToggle {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  padding: 6px var(--spacing-sm);
+  font-size: var(--text-xs);
+  font-family: var(--font-family);
+  cursor: pointer;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.filterToggle:hover {
+  border-color: var(--color-text);
+  color: var(--color-text);
+}
+
+.filterActive {
+  background: var(--color-text);
+  color: #ffffff;
+  border-color: var(--color-text);
+}
+
+.filterActive:hover {
+  color: #ffffff;
+}
+
+
+.sortButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.sortActive {
+  color: var(--color-text);
+}
+
+.sortIcon {
+  color: var(--color-muted);
+  font-size: 10px;
+}
+
+.sortIconActive {
+  color: var(--color-text);
+}
