@@ -4,12 +4,12 @@
 - [x] Admin overview, find people
 - [x] Backup and restore database
 - [x] Neues logo
-- [ ] Email verification
+- [x] filtering and sorting of admin overview list
+- [x] summary stats for admin overview
 - [x] Was ist letzte Woche passiert bei Entschuldigung?
+- [ ] Email verification
 - [ ] unittests
-- [ ] Add a "Laborstrafen" feature that lets admins assign manual penalties to users (with predefined reasons or a custom text),
-- [ ] filtering and sorting of admin overview list
-- [ ] summary stats for admin overview
+- [ ] Add a "Laborstrafen" feature that lets admins assign manual penalties to users (with predefined reasons or a custom text)
 - [ ] ?Force post-check in despite being present?
 
 ## Laborstrafen — Implementation Plan

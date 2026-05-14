@@ -135,6 +135,13 @@ export function Overview() {
 
   const isFiltered = tokens.length > 0 || filterHasInfractions || filterHasExcused || filterMissedLast;
 
+  const totals = {
+    absent:      users.reduce((s, u) => s + u.stats.absent, 0),
+    late:        users.reduce((s, u) => s + u.stats.late, 0),
+    excused:     users.reduce((s, u) => s + u.meetings.filter(m => m.excuseType === 'absent').length, 0),
+    infractions: users.reduce((s, u) => s + u.stats.infractions, 0),
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.toolbar}>
@@ -210,6 +217,27 @@ export function Overview() {
             </tr>
           </thead>
           <tbody>
+            <tr className={styles.sumRow}>
+              <td className={`${styles.td} ${styles.nameCol}`}>∑ {users.length}</td>
+              {meetings.map(m => {
+                const isPast = new Date(m.date) <= now;
+                if (!isPast) return (
+                  <td key={m.date} className={`${styles.td} ${styles.meetingCol}`}>—</td>
+                );
+                const attended = users.filter(u =>
+                  u.meetings.find(ms => ms.date === m.date)?.liveCheckedIn === true
+                ).length;
+                return (
+                  <td key={m.date} className={`${styles.td} ${styles.meetingCol}`}>
+                    {attended}/{users.length}
+                  </td>
+                );
+              })}
+              <td className={`${styles.td} ${styles.summaryCol}`}>{totals.absent}</td>
+              <td className={`${styles.td} ${styles.summaryCol}`}>{totals.late}</td>
+              <td className={`${styles.td} ${styles.summaryCol}`}>{totals.excused}</td>
+              <td className={`${styles.td} ${styles.summaryCol} ${styles.kastenliste} ${totals.infractions > 0 ? styles.infractionsCell : ''}`}>{totals.infractions}</td>
+            </tr>
             {users.map(user => {
               const byMeetingDate = Object.fromEntries(
                 user.meetings.map(m => [m.date, m])
@@ -250,7 +278,7 @@ export function Overview() {
                   <td className={`${styles.td} ${styles.summaryCol}`}>{user.stats.absent}</td>
                   <td className={`${styles.td} ${styles.summaryCol}`}>{user.stats.late}</td>
                   <td className={`${styles.td} ${styles.summaryCol}`}>{excusedCount}</td>
-                  <td className={`${styles.td} ${styles.summaryCol} ${styles.kastenliste}`}>{user.stats.infractions}</td>
+                  <td className={`${styles.td} ${styles.summaryCol} ${styles.kastenliste} ${user.stats.infractions > 0 ? styles.infractionsCell : ''}`}>{user.stats.infractions}</td>
                 </tr>
               );
             })}
