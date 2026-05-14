@@ -39,6 +39,8 @@ interface EditTarget {
   current: MeetingStat | null;
 }
 
+type SortField = 'name' | 'absent' | 'late' | 'excused' | 'infractions';
+type SortDir = 'asc' | 'desc';
 
 export function Overview() {
   const { refreshKey } = useOutletContext<{ refreshKey: number }>();
@@ -48,9 +50,14 @@ export function Overview() {
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [filterHasInfractions, setFilterHasInfractions] = useState(false);
+  const [filterHasExcused, setFilterHasExcused] = useState(false);
+  const [filterMissedLast, setFilterMissedLast] = useState(false);
 
-  function load() {
-    setLoading(true);
+  function load(silent = false) {
+    if (!silent) setLoading(true);
     Promise.all([
       AdminStatsService.adminStatsControllerGetStats(),
       MeetingsService.meetingsControllerFindAll(),
@@ -60,10 +67,20 @@ export function Overview() {
         setMeetingIdByDate(Object.fromEntries(meetings.map((m: { date: string; id: string }) => [m.date, m.id])));
       })
       .catch(() => setError('Fehler beim Laden der Statistiken.'))
-      .finally(() => setLoading(false));
+      .finally(() => { if (!silent) setLoading(false); });
   }
 
   useEffect(() => { load(); }, [refreshKey]);
+
+  function handleSort(field: SortField) {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDir('asc'); }
+  }
+
+  function sortIcon(field: SortField) {
+    if (sortField !== field) return <span className={styles.sortIcon}>↕</span>;
+    return <span className={`${styles.sortIcon} ${styles.sortIconActive}`}>{sortDir === 'asc' ? '↑' : '↓'}</span>;
+  }
 
   function handleExport() {
     window.open('/api/admin/stats/export?format=csv', '_blank');
@@ -76,15 +93,54 @@ export function Overview() {
   const meetings = [...data[0].meetings].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
+  const now = new Date();
+  const pastMeetings = meetings.filter(m => new Date(m.date) <= now);
+  const lastMeetingDate = pastMeetings.length > 0 ? pastMeetings[pastMeetings.length - 1].date : null;
 
   const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const users = [...data]
-    .sort((a, b) => a.lastName.localeCompare(b.lastName))
-    .filter(u => tokens.length === 0 || tokens.every(t =>
+  let users = [...data];
+
+  if (tokens.length > 0) {
+    users = users.filter(u => tokens.every(t =>
       u.firstName.toLowerCase().includes(t) ||
       u.lastName.toLowerCase().includes(t) ||
       u.rzId.toLowerCase().includes(t)
     ));
+  }
+  if (filterHasInfractions) {
+    users = users.filter(u => u.stats.infractions > 0);
+  }
+
+  if (filterHasExcused) {
+    users = users.filter(u => u.meetings.some(m => m.excuseType === 'absent'));
+  }
+  if (filterMissedLast && lastMeetingDate) {
+    users = users.filter(u => {
+      const stat = u.meetings.find(m => m.date === lastMeetingDate);
+      return stat?.liveCheckedIn !== true;
+    });
+  }
+
+  users.sort((a, b) => {
+    let cmp = 0;
+    switch (sortField) {
+      case 'name':        cmp = a.lastName.localeCompare(b.lastName); break;
+      case 'absent':      cmp = a.stats.absent - b.stats.absent; break;
+      case 'late':        cmp = a.stats.late - b.stats.late; break;
+      case 'excused':     cmp = a.meetings.filter(m => m.excuseType === 'absent').length - b.meetings.filter(m => m.excuseType === 'absent').length; break;
+      case 'infractions': cmp = a.stats.infractions - b.stats.infractions; break;
+    }
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+
+  const isFiltered = tokens.length > 0 || filterHasInfractions || filterHasExcused || filterMissedLast;
+
+  const totals = {
+    absent:      users.reduce((s, u) => s + u.stats.absent, 0),
+    late:        users.reduce((s, u) => s + u.stats.late, 0),
+    excused:     users.reduce((s, u) => s + u.meetings.filter(m => m.excuseType === 'absent').length, 0),
+    infractions: users.reduce((s, u) => s + u.stats.infractions, 0),
+  };
 
   return (
     <div className={styles.page}>
@@ -100,25 +156,88 @@ export function Overview() {
         </div>
       </div>
 
-      <SearchInput value={query} onChange={setQuery} />
+      <div className={styles.controlsRow}>
+        <SearchInput value={query} onChange={setQuery} />
+        <div className={styles.filterBar}>
+          <button
+            className={`${styles.filterToggle} ${filterHasInfractions ? styles.filterActive : ''}`}
+            onClick={() => setFilterHasInfractions(f => !f)}
+          >
+            Strafstriche
+          </button>
+          <button
+            className={`${styles.filterToggle} ${filterHasExcused ? styles.filterActive : ''}`}
+            onClick={() => setFilterHasExcused(f => !f)}
+          >
+            Entschuldigt
+          </button>
+          <button
+            className={`${styles.filterToggle} ${filterMissedLast ? styles.filterActive : ''}`}
+            onClick={() => setFilterMissedLast(f => !f)}
+          >
+            Zuletzt fehlend
+          </button>
+        </div>
+      </div>
 
       <div className={styles.tableWrapper}>
         <table className={styles.table}>
           <thead>
             <tr>
-              <th className={`${styles.th} ${styles.nameCol}`}>Name</th>
+              <th className={`${styles.th} ${styles.nameCol}`}>
+                <button className={`${styles.sortButton} ${sortField === 'name' ? styles.sortActive : ''}`} onClick={() => handleSort('name')}>
+                  Name {sortIcon('name')}
+                </button>
+              </th>
               {meetings.map(m => (
                 <th key={m.date} className={`${styles.th} ${styles.meetingCol}`}>
                   {formatDateShort(m.date)}
                 </th>
               ))}
-              <th className={`${styles.th} ${styles.summaryCol}`}>Abwesend</th>
-              <th className={`${styles.th} ${styles.summaryCol}`}>Verspätet</th>
-              <th className={`${styles.th} ${styles.summaryCol}`}>Entschuldigt</th>
-              <th className={`${styles.th} ${styles.summaryCol} ${styles.kastenliste}`}>Strafstriche</th>
+              <th className={`${styles.th} ${styles.summaryCol}`}>
+                <button className={`${styles.sortButton} ${sortField === 'absent' ? styles.sortActive : ''}`} onClick={() => handleSort('absent')}>
+                  Abwesend {sortIcon('absent')}
+                </button>
+              </th>
+              <th className={`${styles.th} ${styles.summaryCol}`}>
+                <button className={`${styles.sortButton} ${sortField === 'late' ? styles.sortActive : ''}`} onClick={() => handleSort('late')}>
+                  Verspätet {sortIcon('late')}
+                </button>
+              </th>
+              <th className={`${styles.th} ${styles.summaryCol}`}>
+                <button className={`${styles.sortButton} ${sortField === 'excused' ? styles.sortActive : ''}`} onClick={() => handleSort('excused')}>
+                  Entschuldigt {sortIcon('excused')}
+                </button>
+              </th>
+              <th className={`${styles.th} ${styles.summaryCol} ${styles.kastenliste}`}>
+                <button className={`${styles.sortButton} ${sortField === 'infractions' ? styles.sortActive : ''}`} onClick={() => handleSort('infractions')}>
+                  Strafstriche {sortIcon('infractions')}
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody>
+            <tr className={styles.sumRow}>
+              <td className={`${styles.td} ${styles.nameCol}`}>∑ {users.length}</td>
+              {meetings.map(m => {
+                const isPast = new Date(m.date) <= now;
+                if (!isPast) return (
+                  <td key={m.date} className={`${styles.td} ${styles.meetingCol}`}>—</td>
+                );
+                const attended = users.filter(u =>
+                  u.meetings.find(ms => ms.date === m.date)?.liveCheckedIn === true
+                ).length;
+                return (
+                  <td key={m.date} className={`${styles.td} ${styles.meetingCol}`}>
+                    {attended}/{users.length}
+                  </td>
+                );
+              })}
+              <td className={`${styles.td} ${styles.summaryCol}`}>{totals.absent}</td>
+              <td className={`${styles.td} ${styles.summaryCol}`}>{totals.late}</td>
+              <td className={`${styles.td} ${styles.summaryCol}`}>{totals.excused}</td>
+              <td className={`${styles.td} ${styles.summaryCol} ${styles.kastenliste} ${totals.infractions > 0 ? styles.infractionsCell : ''}`}>{totals.infractions}</td>
+            </tr>
             {users.map(user => {
               const byMeetingDate = Object.fromEntries(
                 user.meetings.map(m => [m.date, m])
@@ -159,7 +278,7 @@ export function Overview() {
                   <td className={`${styles.td} ${styles.summaryCol}`}>{user.stats.absent}</td>
                   <td className={`${styles.td} ${styles.summaryCol}`}>{user.stats.late}</td>
                   <td className={`${styles.td} ${styles.summaryCol}`}>{excusedCount}</td>
-                  <td className={`${styles.td} ${styles.summaryCol} ${styles.kastenliste}`}>{user.stats.infractions}</td>
+                  <td className={`${styles.td} ${styles.summaryCol} ${styles.kastenliste} ${user.stats.infractions > 0 ? styles.infractionsCell : ''}`}>{user.stats.infractions}</td>
                 </tr>
               );
             })}
@@ -168,9 +287,9 @@ export function Overview() {
       </div>
 
       <p className={styles.summaryLine}>
-        {tokens.length === 0
-          ? `${users.length} Mitglieder`
-          : `${users.length} von ${data.length} Mitgliedern`}
+        {isFiltered
+          ? `${users.length} von ${data.length} Mitgliedern`
+          : `${users.length} Mitglieder`}
         {' · '}{meetings.length} Meetings
       </p>
 
@@ -182,7 +301,7 @@ export function Overview() {
           userName={editTarget.userName}
           current={editTarget.current}
           onClose={() => setEditTarget(null)}
-          onSaved={() => { setEditTarget(null); load(); }}
+          onSaved={() => { setEditTarget(null); load(true); }}
         />
       )}
     </div>

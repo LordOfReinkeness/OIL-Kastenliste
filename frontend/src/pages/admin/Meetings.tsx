@@ -223,11 +223,11 @@ export function AdminMeetings() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
 
-  function load() {
-    setLoading(true);
+  function load(silent = false) {
+    if (!silent) setLoading(true);
     MeetingsService.meetingsControllerFindAll()
       .then(setMeetings)
-      .finally(() => setLoading(false));
+      .finally(() => { if (!silent) setLoading(false); });
   }
 
   useEffect(() => { load(); }, [refreshKey]);
@@ -243,7 +243,7 @@ export function AdminMeetings() {
     <div className={styles.page}>
       <MeetingLegend defaultOpen={false} />
 
-      {past.map(m => <MeetingRow key={m.id} meeting={m} onEdited={load} onDeleted={load} />)}
+      {past.map(m => <MeetingRow key={m.id} meeting={m} onEdited={() => load(true)} onDeleted={load} />)}
 
       {past.length > 0 && future.length > 0 && (
         <div className={styles.divider}>
@@ -251,7 +251,7 @@ export function AdminMeetings() {
         </div>
       )}
 
-      {future.map(m => <MeetingRow key={m.id} meeting={m} onEdited={load} onDeleted={load} />)}
+      {future.map(m => <MeetingRow key={m.id} meeting={m} onEdited={() => load(true)} onDeleted={load} />)}
 
       {!meetings.length && <p className={styles.muted}>Keine Meetings vorhanden.</p>}
 

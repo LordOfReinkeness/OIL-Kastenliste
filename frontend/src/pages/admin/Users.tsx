@@ -29,8 +29,8 @@ export function AdminUsers() {
   const [deleteUser, setDeleteUser] = useState<UserRow | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  function load() {
-    setLoading(true);
+  function load(silent = false) {
+    if (!silent) setLoading(true);
     AdminStatsService.adminStatsControllerGetStats()
       .then(data => {
         const sorted = [...data].sort((a: UserRow, b: UserRow) =>
@@ -39,7 +39,7 @@ export function AdminUsers() {
         setUsers(sorted);
       })
       .catch(() => setError('Fehler beim Laden der Benutzer.'))
-      .finally(() => setLoading(false));
+      .finally(() => { if (!silent) setLoading(false); });
   }
 
   useEffect(() => { load(); }, [refreshKey]);
@@ -109,7 +109,7 @@ export function AdminUsers() {
         <EditUserPopup
           user={editUser}
           onClose={() => setEditUser(null)}
-          onSaved={() => { setEditUser(null); load(); }}
+          onSaved={() => { setEditUser(null); load(true); }}
         />
       )}
 

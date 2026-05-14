@@ -4,8 +4,10 @@
 - [x] Admin overview, find people
 - [x] Backup and restore database
 - [x] Neues logo
-- [ ] Email verification
+- [x] filtering and sorting of admin overview list
+- [x] summary stats for admin overview
 - [x] Was ist letzte Woche passiert bei Entschuldigung?
+- [ ] Email verification
 - [ ] ?Force post-check in despite being present?
 - [ ] unittests
 
