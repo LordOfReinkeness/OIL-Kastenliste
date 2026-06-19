@@ -4,12 +4,12 @@ Both scripts use PostgreSQL's custom dump format (`pg_dump -Fc`) and run against
 
 ## Defaults
 
-| Variable    | Default               |
-|-------------|-----------------------|
-| `CONTAINER` | `oil-kastenliste-db`  |
-| `DB_USER`   | `postgres`            |
-| `DB_NAME`   | `kastenliste`         |
-| `OUTPUT_DIR`| `~/backups`           |
+| Variable     | Default              |
+|--------------|----------------------|
+| `CONTAINER`  | `oil-kastenliste-db` |
+| `DB_USER`    | `postgres`           |
+| `DB_NAME`    | `kastenliste`        |
+| `OUTPUT_DIR` | `~/backups`          |
 
 ---
 

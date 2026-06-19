@@ -38,6 +38,26 @@ services:
       - internal
     restart: unless-stopped
 
+  backup:
+    container_name: oil-kastenliste-backup
+    image: ghcr.io/lordofreinkeness/oil-kastenliste-backup:latest
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+      DB_HOST: db
+      DB_USER: postgres
+      DB_NAME: kastenliste
+      BACKUP_CRON: ${BACKUP_CRON}
+      BACKUP_RETAIN: ${BACKUP_RETAIN}
+      BACKUP_PATH: /backups
+    volumes:
+      - ${BACKUP_HOST_PATH}:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    restart: unless-stopped
+
 volumes:
   kastenliste_db:
 
