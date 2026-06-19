@@ -1,7 +1,7 @@
 FROM postgres:17-alpine
 
 ARG SUPERCRONIC_VERSION=v0.2.46
-ARG TARGETARCH=arm64
+ARG TARGETARCH
 
 RUN apk add --no-cache curl
 
