@@ -4,4 +4,5 @@ dist
 .claude
 backend/frontend-dist/
 backups/
+automatic_backups/
 *.dump

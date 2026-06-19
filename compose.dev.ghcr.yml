@@ -35,5 +35,22 @@ services:
       timeout: 5s
       retries: 5
 
+  backup:
+    container_name: oil-kastenliste-backup-ghcr
+    image: ghcr.io/lordofreinkeness/oil-kastenliste-backup:dev
+    environment:
+      PGPASSWORD: postgres
+      DB_HOST: db
+      DB_USER: postgres
+      DB_NAME: kastenliste
+      BACKUP_CRON: ${BACKUP_CRON}
+      BACKUP_RETAIN: ${BACKUP_RETAIN}
+      BACKUP_PATH: /backups
+    volumes:
+      - ${BACKUP_HOST_PATH}:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   kastenliste_ghcr_db:
