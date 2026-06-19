@@ -8,9 +8,8 @@
 - [x] summary stats for admin overview
 - [x] Was ist letzte Woche passiert bei Entschuldigung?
 - [ ] Email verification
-- [ ] unittests
-- [ ] Add a "Laborstrafen" feature that lets admins assign manual penalties to users (with predefined reasons or a custom text)
 - [ ] ?Force post-check in despite being present?
+- [ ] unittests
 
 ## Laborstrafen — Implementation Plan
 
