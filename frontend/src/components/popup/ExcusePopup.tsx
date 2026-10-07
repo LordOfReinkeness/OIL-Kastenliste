@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Popup } from './Popup';
-import { MeetingsService, ApiError, ExcuseDto } from '../../api';
+import { MeetingsService, ApiError, ExcuseDto, isUserNotFound } from '../../api';
 import { useUserSession } from '../../hooks/useUserSession';
 import { formatDateTimeLong } from '../../utils/date';
 import styles from './ExcusePopup.module.css';
@@ -15,7 +15,7 @@ type ExcuseType = 'absent' | 'late';
 type Step = 'form' | 'submitting' | 'success';
 
 export function ExcusePopup({ onClose, onSuccess }: ExcusePopupProps) {
-  const { user } = useUserSession();
+  const { user, clearUser } = useUserSession();
   const [meeting, setMeeting] = useState<any>(null);
   const [loadingMeeting, setLoadingMeeting] = useState(true);
   const [noMeeting, setNoMeeting] = useState(false);
@@ -52,6 +52,12 @@ export function ExcusePopup({ onClose, onSuccess }: ExcusePopupProps) {
       });
       setStep('success');
     } catch (e) {
+      if (isUserNotFound(e)) {
+        // stale session: back to the form, RzIdPopup takes over
+        clearUser();
+        setStep('form');
+        return;
+      }
       if (e instanceof ApiError) {
         if (e.status === 403) setError('Die Entschuldigungsfrist ist abgelaufen.');
         else if (e.status === 409) setError('Du hast dich bereits entschuldigt.');

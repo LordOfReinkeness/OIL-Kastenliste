@@ -1,4 +1,5 @@
-import { createContext, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
+import { UsersService, isUserNotFound } from '../api';
 
 export interface SessionUser {
   id: string;
@@ -42,6 +43,25 @@ export function UserSessionProvider({ children }: { children: React.ReactNode })
     localStorage.removeItem(STORAGE_KEY);
     setUserState(null);
   }
+
+  // the stored session may be stale: validate it once against the backend
+  useEffect(() => {
+    const stored = loadFromStorage();
+    if (!stored) return;
+    UsersService.usersControllerFindByRzId(stored.rzId)
+      .then(found => UsersService.usersControllerFindOne(found.id))
+      .then((fresh: SessionUser) => {
+        const changed =
+          fresh.id !== stored.id ||
+          fresh.firstName !== stored.firstName ||
+          fresh.lastName !== stored.lastName;
+        if (changed) setUser(fresh);
+      })
+      .catch(e => {
+        // keep the session on network/server errors
+        if (isUserNotFound(e)) clearUser();
+      });
+  }, []);
 
   return (
     <UserSessionContext value={{ user, setUser, clearUser }}>

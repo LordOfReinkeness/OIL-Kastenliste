@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Popup } from './Popup';
-import { TokenService, ApiError, LiveCheckinDto } from '../../api';
+import { TokenService, ApiError, LiveCheckinDto, isUserNotFound } from '../../api';
 import { useUserSession } from '../../hooks/useUserSession';
 import { formatDateTimeLong } from '../../utils/date';
 import styles from './CheckinPopup.module.css';
@@ -14,7 +14,7 @@ interface LiveCheckinPopupProps {
 }
 
 export function LiveCheckinPopup({ token }: LiveCheckinPopupProps) {
-  const { user } = useUserSession();
+  const { user, clearUser } = useUserSession();
   const navigate = useNavigate();
 
   const [step, setStep] = useState<Step>('loading');
@@ -48,6 +48,12 @@ export function LiveCheckinPopup({ token }: LiveCheckinPopupProps) {
       });
       setStep('success');
     } catch (e) {
+      if (isUserNotFound(e)) {
+        // stale session: back to the form, RzIdPopup takes over
+        clearUser();
+        setStep('form');
+        return;
+      }
       if (e instanceof ApiError) {
         if (e.status === 409) setErrorMsg('Du bist bereits eingecheckt.');
         else if (e.status === 403) setErrorMsg('Das Live-Check-in-Fenster ist nicht geöffnet.');

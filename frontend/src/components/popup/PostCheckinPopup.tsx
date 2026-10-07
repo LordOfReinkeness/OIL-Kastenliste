@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Popup } from './Popup';
-import { TokenService, ApiError } from '../../api';
+import { TokenService, ApiError, isUserNotFound } from '../../api';
 import { useUserSession } from '../../hooks/useUserSession';
 import { formatDateTimeLong } from '../../utils/date';
 import styles from './CheckinPopup.module.css';
@@ -13,7 +13,7 @@ interface PostCheckinPopupProps {
 }
 
 export function PostCheckinPopup({ token }: PostCheckinPopupProps) {
-  const { user } = useUserSession();
+  const { user, clearUser } = useUserSession();
   const navigate = useNavigate();
 
   const [step, setStep] = useState<Step>('loading');
@@ -47,6 +47,12 @@ export function PostCheckinPopup({ token }: PostCheckinPopupProps) {
       });
       setStep('success');
     } catch (e) {
+      if (isUserNotFound(e)) {
+        // stale session: back to the form, RzIdPopup takes over
+        clearUser();
+        setStep('form');
+        return;
+      }
       if (e instanceof ApiError) {
         if (e.status === 409) setErrorMsg('Du hast dich bereits eingecheckt.');
         else if (e.status === 403) setErrorMsg('Die Frist ist abgelaufen oder die maximale Anzahl an Versuchen wurde erreicht.');
